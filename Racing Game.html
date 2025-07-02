@@ -465,17 +465,17 @@
 
       .ui-overlay,
       .controls-info,
-      .position-display,
-      .leaderboard {
+      .position-display {
         display: none;
       }
 
       .game-running .ui-overlay,
       .game-running .controls-info,
-      .game-running .position-display,
-      .game-running .leaderboard {
+      .game-running .position-display {
         display: block;
       }
+
+      /* Leaderboard is handled separately in JS */
 
       .ui-overlay {
         position: absolute;
@@ -626,8 +626,8 @@
 
       .position-display {
         position: absolute;
-        top: 280px;
-        left: 20px;
+        top: 180px;
+        right: 20px;
         background: linear-gradient(
           145deg,
           rgba(0, 0, 0, 0.9),
@@ -635,7 +635,7 @@
         );
         padding: 1rem;
         border-radius: 8px;
-        border-left: 4px solid var(--primary-color);
+        border-right: 4px solid var(--primary-color);
         border-top: 1px solid rgba(255, 255, 255, 0.2);
         z-index: 10;
         -webkit-backdrop-filter: blur(10px);
@@ -643,8 +643,8 @@
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         font-family: "Arial", "Helvetica", sans-serif;
         font-weight: 500;
-        min-height: 450px;
-        max-width: 250px;
+        width: 220px;
+        overflow: visible;
       }
 
       .position-item {
@@ -654,6 +654,13 @@
         align-items: center;
         padding: 0.3rem 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        height: 30px; /* Fixed height to prevent vertical growth */
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .position-item span {
+        white-space: nowrap;
       }
 
       .position-item:last-child {
@@ -667,25 +674,25 @@
 
       .leaderboard {
         position: absolute;
-        top: 320px;
-        right: 20px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         background: linear-gradient(
           145deg,
-          rgba(0, 0, 0, 0.9),
-          rgba(0, 0, 0, 0.8)
+          rgba(0, 0, 0, 0.95),
+          rgba(0, 0, 0, 0.9)
         );
-        padding: 1rem;
-        border-radius: 8px;
-        border-right: 4px solid var(--accent-color);
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
-        z-index: 10;
-        max-height: 350px;
-        min-width: 220px;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 3px solid var(--accent-color);
+        z-index: 100;
+        width: 300px;
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         font-family: "Arial", "Helvetica", sans-serif;
         font-weight: 500;
+        display: none; /* Initially hidden, will be shown at end of race */
       }
 
       .leaderboard h3 {
@@ -704,6 +711,24 @@
         padding: 0.5rem;
         border-radius: 8px;
         transition: background 0.2s;
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        height: 35px; /* Fixed height to prevent vertical growth */
+      }
+
+      .leaderboard-entry span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 8px;
+        flex: 1;
+        max-width: 60%;
+        white-space: nowrap;
+      }
+
+      .leaderboard-entry span:last-child {
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
 
       .leaderboard-entry:hover {
@@ -871,16 +896,13 @@
         }
 
         .position-display {
-          top: 180px;
-          left: 10px;
-          min-height: 300px;
+          top: 120px;
+          right: 10px;
+          width: 200px;
         }
 
         .leaderboard {
-          top: 250px;
-          right: 10px;
-          max-height: 250px;
-          overflow-y: auto;
+          width: 350px;
         }
       }
 
@@ -958,106 +980,6 @@
 
         .broadcast-value {
           font-size: 1rem;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .team-selection-title {
-          font-size: 2.2rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .team-selection-subtitle {
-          font-size: 1rem;
-          margin-bottom: 2rem;
-        }
-
-        .title {
-          font-size: 2.2rem;
-        }
-
-        .team-card {
-          width: 250px;
-          height: 280px;
-          padding: 1rem;
-        }
-
-        .team-card.prev,
-        .team-card.next {
-          transform: translateX(-120px) scale(0.7);
-          opacity: 0.3;
-        }
-
-        .team-card.next {
-          transform: translateX(120px) scale(0.7);
-        }
-
-        .carousel-nav {
-          width: 30px;
-          height: 50px;
-          font-size: 1.4rem;
-          margin: 0 5px;
-        }
-
-        .ui-overlay {
-          top: 5px;
-          left: 5px;
-          font-size: 0.7rem;
-          padding: 0.6rem;
-          min-width: 150px;
-        }
-
-        .controls-info {
-          top: 5px;
-          right: 5px;
-          font-size: 0.65rem;
-          padding: 0.6rem;
-        }
-
-        .position-display {
-          top: 140px;
-          left: 5px;
-          font-size: 0.7rem;
-          padding: 0.6rem;
-          min-height: 200px;
-        }
-
-        .controls-info {
-          display: none;
-          /* Hide controls on mobile to save space */
-        }
-
-        .leaderboard {
-          top: 200px;
-          right: 5px;
-          font-size: 0.65rem;
-          padding: 0.6rem;
-          max-height: 180px;
-          min-width: 160px;
-        }
-
-        .broadcast-bar {
-          height: 45px;
-          padding: 0 0.8rem;
-        }
-
-        .broadcast-label {
-          font-size: 0.6rem;
-          padding: 0.1rem 0.4rem;
-        }
-
-        .broadcast-value {
-          font-size: 0.9rem;
-        }
-
-        .professional-btn {
-          padding: 0.8rem 2rem;
-          font-size: 1rem;
-        }
-
-        .start-instructions {
-          padding: 1.5rem;
-          margin-top: 1rem;
         }
       }
 
@@ -1147,16 +1069,6 @@
       .controls-info {
         min-width: 180px;
         max-width: 220px;
-      }
-
-      .position-display {
-        min-width: 180px;
-        max-width: 220px;
-      }
-
-      .leaderboard {
-        min-width: 200px;
-        max-width: 250px;
       }
     </style>
   </head>
@@ -1985,7 +1897,7 @@
         iberian_speed: {
           "--primary-color": "#C60B1E",
           "--accent-color": "#FFC400",
-          "--bg-primary": "#1a0a0a",
+          "--bg-primary": "#0a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
@@ -2056,7 +1968,7 @@
           "--primary-color": "#BC002D",
           "--accent-color": "#000000",
           "--bg-primary": "#1a0a0a",
-          "--bg-secondary": "#2a1a1a",
+          "--bg-secondary": "#2a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
           "--border-glow": "rgba(188, 0, 45, 0.4)",
@@ -2065,7 +1977,7 @@
         velocidad_venezuela: {
           "--primary-color": "#FFCC00",
           "--accent-color": "#003DA5",
-          "--bg-primary": "#1a1a0a",
+          "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffcc88",
@@ -2075,8 +1987,8 @@
         veloce_italia: {
           "--primary-color": "#009246",
           "--accent-color": "#CE2B37",
-          "--bg-primary": "#0a1a0a",
-          "--bg-secondary": "#1a2a1a",
+          "--bg-primary": "#1a0a0a",
+          "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88ff88",
           "--border-glow": "rgba(0, 146, 70, 0.4)",
@@ -2432,9 +2344,15 @@
 
           const minutes = Math.floor(entry.time / 60);
           const seconds = (entry.time % 60).toFixed(3);
+          
+          // Truncate names that are too long (over 12 characters)
+          let displayName = entry.name;
+          if (displayName.length > 12) {
+            displayName = displayName.substring(0, 10) + "...";
+          }
 
           div.innerHTML = `
-                    <span>${index + 1}. ${entry.name}</span>
+                    <span>${index + 1}. ${displayName}</span>
                     <span>${minutes}:${seconds.padStart(6, "0")}</span>
                 `;
           list.appendChild(div);
@@ -4531,7 +4449,14 @@
 
         const position = index + 1;
         const positionText = `P${position}`;
-        const carName = car.name || "Player";
+        
+        // Shorten car name to first two words if it's too long
+        let carName = car.name || "Player";
+        const words = carName.split(' ');
+        if (words.length > 2) {
+          carName = words.slice(0, 2).join(' ');
+        }
+        
         const gapText = calculateGapText(car, index, allCars);
         const carNameColor = car.isPlayer ? "var(--primary-color)" : "#ffffff";
 
@@ -4539,8 +4464,8 @@
           <span style="color: #cccccc; font-weight: 600; width: 25px; display: inline-block;">${positionText}</span>
           <span style="color: ${carNameColor}; font-weight: ${
           car.isPlayer ? "700" : "400"
-        }; flex: 1;">${carName}</span>
-          <span style="color: #aaaaaa; font-size: 0.8rem;">${gapText}</span>
+        }; flex: 1; max-width: 100px;">${carName}</span>
+          <span style="color: #aaaaaa; font-size: 0.8rem; min-width: 45px; text-align: right;">${gapText}</span>
         `;
 
         return div;
@@ -6062,6 +5987,10 @@
           document.getElementById("bestLapTime").textContent = "No valid lap";
         }
 
+        // Show leaderboard at race end
+        updateLeaderboardDisplay();
+        document.querySelector('.leaderboard').style.display = 'block';
+
         // Calculate position in leaderboard and splits
         const sortedLeaderboard = [...leaderboard].sort(
           (a, b) => a.time - b.time
@@ -6187,6 +6116,9 @@
         // Show broadcast bar and game UI
         document.querySelector(".broadcast-bar").style.display = "flex";
         document.querySelector(".game-container").classList.add("game-running");
+        
+        // Make sure leaderboard is hidden when race starts
+        document.querySelector(".leaderboard").style.display = "none";
 
         gameRunning = true;
         raceStartTime = Date.now();
@@ -6284,6 +6216,7 @@
         // Hide broadcast bar and game UI
         document.querySelector(".broadcast-bar").style.display = "none";
         document.querySelector(".game-container").classList.remove("game-running");
+        document.querySelector(".leaderboard").style.display = "none";
 
         document.getElementById("raceComplete").style.display = "none";
         document.getElementById("startScreen").style.display = "none";
