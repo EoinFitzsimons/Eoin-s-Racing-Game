@@ -250,3 +250,33 @@ Developed with passion for racing simulation and international motorsport cultur
 **Ready to Race? Choose your team and start your championship journey!** 🏁
 
 *Experience the thrill of international circuit racing from your browser.*
+
+## 🔄 Recent Updates
+
+### July 2025 Update
+
+#### 🏁 Start/Finish Line Improvements
+
+- Fixed issue where AI cars and sometimes the player weren't properly registering the start/finish line checkpoint
+- Ensured all cars (player and AI) start behind the start/finish line for correct checkpoint detection
+- Increased the detection area for the start/finish checkpoint for improved reliability
+- Maintained gentle race start protection (small upward velocity) to help cars cross the line
+
+#### ⏱️ Best Lap Tracking
+
+- Added comprehensive lap timing system to track and display best lap times
+- Best lap time now displays in the broadcast bar during races
+- Best lap time shows on the race completion screen
+- Fixed reset functionality to ensure best lap time resets when restarting race or selecting a new team
+
+#### 🎨 UI Improvements
+
+- Enhanced text visibility to ensure all UI elements are readable against all backgrounds
+- Fixed dark-on-dark text issues for better contrast
+- Improved overall UI consistency and readability
+
+#### 🔧 Bug Fixes
+
+- Fixed code duplication in team selection return function
+- Ensured proper placement of all cars on the starting grid
+- Improved race completion screen display and statistics
