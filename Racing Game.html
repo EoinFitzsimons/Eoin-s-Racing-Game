@@ -1658,6 +1658,14 @@
           <div class="broadcast-label">SPEED</div>
           <div class="broadcast-value" id="speedDisplay">0 KM/H</div>
         </div>
+        <div class="broadcast-section">
+          <div class="broadcast-label">CURR LAP</div>
+          <div class="broadcast-value" id="currentLapTimeDisplay">0:00.000</div>
+        </div>
+        <div class="broadcast-section">
+          <div class="broadcast-label">BEST LAP</div>
+          <div class="broadcast-value" id="bestLapTimeDisplay">-:--:---</div>
+        </div>
       </div>
 
       <div class="ui-overlay">
@@ -1872,6 +1880,13 @@
           <span
             id="finalTime"
             style="color: var(--text-primary); font-weight: bold"
+          ></span>
+        </p>
+        <p style="font-size: 1.2rem; margin: 0.5rem 0">
+          Best Lap:
+          <span
+            id="bestLapTime"
+            style="color: var(--accent-color); font-weight: bold"
           ></span>
         </p>
         <p
@@ -2335,16 +2350,21 @@
        */
       function resetCameraTransform() {
         ctx.restore();
-      }        // Game state
+      }
+
+      // Game state
       let gameRunning = false;
       let raceStartTime = 0;
       let currentLap = 1;
       let totalLaps = 5;
       let raceComplete = false;
       let currentRaceTime = 0;
-      let playerFinished = false;
-      let allCarsFinished = false;
-      let raceResults = []; // Will store final race results for all cars
+      
+      // Lap timing variables
+      let lapStartTime = 0;
+      let currentLapTime = 0;
+      let bestLapTime = Number.MAX_VALUE;
+      let lapTimes = [];
 
       // Initialize team selection on page load
       document.addEventListener("DOMContentLoaded", () => {
@@ -4339,6 +4359,21 @@
             if (allCheckpointsHit && car.lapsCompleted > 0) {
               // Completed a full lap
               car.lapsCompleted++;
+              
+              // Track lap times for player
+              if (car === player && gameRunning) {
+                const currentTime = Date.now();
+                currentLapTime = (currentTime - lapStartTime) / 1000;
+                lapTimes.push(currentLapTime);
+                
+                if (currentLapTime < bestLapTime) {
+                  bestLapTime = currentLapTime;
+                }
+                
+                // Start timing for next lap
+                lapStartTime = currentTime;
+              }
+              
               // Reset for next lap
               car.currentCheckpoint = 1; // Next checkpoint after start/finish
               car.checkpointsHit = [true, false, false];
@@ -4351,6 +4386,12 @@
               car.lapsCompleted = 1;
               car.currentCheckpoint = 1;
               car.checkpointsHit = [true, false, false];
+              
+              // Initialize lap timing for player
+              if (car === player && gameRunning) {
+                lapStartTime = Date.now();
+              }
+              
               console.log(`${car.name || "Player"} completed lap 1`);
             }
           }
@@ -5884,6 +5925,34 @@
         // Update tire wear bar (reverse - starts full, decreases as tires wear)
         const tireCondition = Math.max(0, 100 - player.tireWear);
         document.getElementById("tireBar").style.width = `${tireCondition}%`;
+        
+        // Update lap time displays
+        if (gameRunning) {
+          // Current lap time
+          const currentTime = Date.now();
+          if (lapStartTime > 0) {
+            currentLapTime = (currentTime - lapStartTime) / 1000;
+            const lapMinutes = Math.floor(currentLapTime / 60);
+            const lapSeconds = (currentLapTime % 60).toFixed(3);
+            document.getElementById("currentLapTimeDisplay").textContent = 
+              `${lapMinutes}:${lapSeconds.padStart(6, "0")}`;
+          }
+          
+          // Best lap time
+          if (bestLapTime < Number.MAX_VALUE) {
+            const bestLapMinutes = Math.floor(bestLapTime / 60);
+            const bestLapSeconds = (bestLapTime % 60).toFixed(3);
+            document.getElementById("bestLapTimeDisplay").textContent = 
+              `${bestLapMinutes}:${bestLapSeconds.padStart(6, "0")}`;
+          }
+          
+          // Race time
+          const raceElapsed = (currentTime - raceStartTime) / 1000;
+          const raceMinutes = Math.floor(raceElapsed / 60);
+          const raceSeconds = (raceElapsed % 60).toFixed(1);
+          document.getElementById("raceTimeDisplay").textContent = 
+            `${raceMinutes}:${raceSeconds.padStart(4, "0")}`;
+        }
 
         // Update damage bar
         const totalDamage =
@@ -5981,6 +6050,17 @@
         document.getElementById(
           "finalTime"
         ).textContent = `${minutes}:${seconds.padStart(6, "0")}`;
+        
+        // Display best lap time
+        if (bestLapTime < Number.MAX_VALUE) {
+          const bestLapMinutes = Math.floor(bestLapTime / 60);
+          const bestLapSeconds = (bestLapTime % 60).toFixed(3);
+          document.getElementById(
+            "bestLapTime"
+          ).textContent = `${bestLapMinutes}:${bestLapSeconds.padStart(6, "0")}`;
+        } else {
+          document.getElementById("bestLapTime").textContent = "No valid lap";
+        }
 
         // Calculate position in leaderboard and splits
         const sortedLeaderboard = [...leaderboard].sort(
@@ -6112,6 +6192,12 @@
         raceStartTime = Date.now();
         currentLap = 1;
         raceComplete = false;
+        
+        // Reset lap timing
+        lapStartTime = 0;
+        currentLapTime = 0;
+        bestLapTime = Number.MAX_VALUE;
+        lapTimes = [];
 
         // Reset UI elements
         document.getElementById("newRecordText").style.color =
@@ -6176,6 +6262,12 @@
 
       // Restart race
       function restartRace() {
+        // Reset lap timing variables
+        lapStartTime = 0;
+        currentLapTime = 0;
+        bestLapTime = Number.MAX_VALUE;
+        lapTimes = [];
+        
         startRace();
       }
 
@@ -6183,11 +6275,15 @@
       function returnToTeamSelection() {
         gameRunning = false;
 
+        // Reset lap timing variables
+        lapStartTime = 0;
+        currentLapTime = 0;
+        bestLapTime = Number.MAX_VALUE;
+        lapTimes = [];
+
         // Hide broadcast bar and game UI
         document.querySelector(".broadcast-bar").style.display = "none";
-        document
-          .querySelector(".game-container")
-          .classList.remove("game-running");
+        document.querySelector(".game-container").classList.remove("game-running");
 
         document.getElementById("raceComplete").style.display = "none";
         document.getElementById("startScreen").style.display = "none";
