@@ -14,22 +14,22 @@ Eoin's Racing Game is an immersive top-down racing game where players can choose
 
 Choose from **16 international racing teams**, each representing different countries:
 
-- **🇮🇪 Emerald Isle Racing (EIR)** - Ireland's premier racing team
-- **🏴󠁧󠁢󠁷󠁬󠁳󠁿 Dragon Force Motorsport (DFM)** - Welsh racing excellence
-- **🏴󠁧󠁢󠁳󠁣󠁴󠁿 Highland Racing Team (HRT)** - Scottish motorsport heritage
-- **🇬🇧 Britannia Motors (BRT)** - English racing tradition
-- **🇫🇷 Tricolore Racing (TCR)** - French racing artistry
-- **🇩🇪 Kaiser Motorsport (KMS)** - German engineering precision
-- **🇪🇸 Iberian Speed (IBS)** - Spanish racing passion
-- **🇮🇹 Veloce Italia (VIT)** - Italian racing elegance
-- **🇭🇷 Adriatic Racing (ADR)** - Croatian motorsport spirit
-- **🇺🇸 Liberty Racing (LBR)** - American racing power
-- **🇯🇵 Rising Sun Motors (RSM)** - Japanese racing innovation
-- **🇨🇳 Dragon Speed Racing (DSR)** - Chinese racing excellence
-- **🇮🇳 Maharaja Motors (MHJ)** - Indian racing heritage
-- **🇧🇷 Samba Racing Team (SRT)** - Brazilian racing flair
-- **🇨🇷 Pura Vida Racing (PVR)** - Costa Rican racing spirit
-- **🇸🇴 Horn Velocity (HVR)** - Somalian racing pride
+- **![Croatia](https://flagcdn.com/w20/hr.png) Adriatic Racing (ADR)** - Speed: 85, Acceleration: 80, Handling: 90
+- **![England](https://flagcdn.com/w20/gb-eng.png) Britannia Motors (BRT)** - Speed: 88, Acceleration: 85, Handling: 87
+- **![China](https://flagcdn.com/w20/cn.png) Celestial Motors (CEM)** - Speed: 90, Acceleration: 88, Handling: 82
+- **![Wales](https://flagcdn.com/w20/gb-wls.png) Dragon Force Motorsport (DFM)** - Speed: 82, Acceleration: 90, Handling: 88
+- **![Ireland](https://flagcdn.com/w20/ie.png) Emerald Isle Racing (EIR)** - Speed: 85, Acceleration: 85, Handling: 85
+- **![Scotland](https://flagcdn.com/w20/gb-sct.png) Highland Racing Team (HRT)** - Speed: 80, Acceleration: 88, Handling: 92
+- **![Spain](https://flagcdn.com/w20/es.png) Iberian Speed (IBS)** - Speed: 92, Acceleration: 82, Handling: 86
+- **![Germany](https://flagcdn.com/w20/de.png) Kaiser Motorsport (KMS)** - Speed: 95, Acceleration: 90, Handling: 85
+- **![USA](https://flagcdn.com/w20/us.png) Liberty Racing (LBR)** - Speed: 88, Acceleration: 86, Handling: 86
+- **![India](https://flagcdn.com/w20/in.png) Maharaja Motors (MHJ)** - Speed: 83, Acceleration: 87, Handling: 90
+- **![Japan](https://flagcdn.com/w20/jp.png) Rising Sun Motors (RSM)** - Speed: 86, Acceleration: 92, Handling: 88
+- **![Brazil](https://flagcdn.com/w20/br.png) Samba Racing Team (SRT)** - Speed: 87, Acceleration: 89, Handling: 84
+- **![Romania](https://flagcdn.com/w20/ro.png) Thunder Racing (THR)** - Speed: 84, Acceleration: 83, Handling: 93
+- **![France](https://flagcdn.com/w20/fr.png) Tricolore Racing (TCR)** - Speed: 89, Acceleration: 87, Handling: 89
+- **![Venezuela](https://flagcdn.com/w20/ve.png) Velocidad Venezuela (VVR)** - Speed: 81, Acceleration: 85, Handling: 89
+- **![Italy](https://flagcdn.com/w20/it.png) Veloce Italia (VIT)** - Speed: 90, Acceleration: 84, Handling: 91
 
 ### 🎨 Dynamic Team Themes
 
@@ -191,10 +191,13 @@ npx serve .  # Node.js
 
 ### **Team Selection**
 
-- **Emerald Isle Racing** - Balanced performance, great for beginners
-- **Britannia Motors** - High championship count, experienced team
-- **Dragon Force Motorsport** - Strong Welsh heritage, reliable choice
-- **Highland Racing Team** - Newer team, underdog potential
+- **Kaiser Motorsport** - Highest speed (95) and acceleration (90), solid all-around performance
+- **Celestial Motors** - High speed (90) with excellent acceleration (88), lower handling
+- **Veloce Italia** - Great speed (90) with superior handling (91), moderate acceleration
+- **Iberian Speed** - Maximum speed focus (92), balanced handling, lower acceleration
+- **Highland Racing Team** - Exceptional handling (93), good acceleration, moderate speed
+- **Tricolore Racing** - Well-balanced across all attributes (89/87/89)
+- **Emerald Isle Racing** - Perfect balance with equal stats across all categories (85/85/85)
 
 ### **Lap Record Strategy**
 

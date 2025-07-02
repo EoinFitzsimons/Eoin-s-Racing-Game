@@ -1170,7 +1170,7 @@
     <div class="game-container">
       <!-- Team Selection Screen -->
       <div class="team-selection-screen" id="teamSelectionScreen">
-        <h1 class="team-selection-title">CIRCUIT RACER</h1>
+        <h1 class="team-selection-title">EOIN'S RACING GAME</h1>
         <p class="team-selection-subtitle">Select Your Racing Team</p>
 
         <div class="teams-grid">
@@ -1185,27 +1185,27 @@
               ‹
             </button>
 
-            <!-- Irish Team -->
-            <div class="team-card active" data-team="emerald_isle">
-              <div class="team-logo">EIR</div>
-              <div class="team-name">Emerald Isle Racing</div>
+            <!-- Croatian Team -->
+            <div class="team-card active" data-team="adriatic_racing">
+              <div class="team-logo">ADR</div>
+              <div class="team-name">Adriatic Racing</div>
               <div class="car-livery"></div>
               <div class="team-facts">
                 <div class="fact-row">
                   <span class="fact-label">Country:</span>
-                  <span class="fact-value">Ireland</span>
+                  <span class="fact-value">Croatia</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Founded:</span>
-                  <span class="fact-value">2018</span>
+                  <span class="fact-value">2019</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Championships:</span>
-                  <span class="fact-value">2</span>
+                  <span class="fact-value">1</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Wins:</span>
-                  <span class="fact-value">15</span>
+                  <span class="fact-value">6</span>
                 </div>
               </div>
             </div>
@@ -1461,9 +1461,9 @@
             </div>
 
             <!-- Chinese Team -->
-            <div class="team-card hidden" data-team="dragon_speed">
-              <div class="team-logo">DSR</div>
-              <div class="team-name">Dragon Speed Racing</div>
+            <div class="team-card hidden" data-team="celestial_motors">
+              <div class="team-logo">CEM</div>
+              <div class="team-name">Celestial Motors</div>
               <div class="car-livery"></div>
               <div class="team-facts">
                 <div class="fact-row">
@@ -1476,11 +1476,11 @@
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Championships:</span>
-                  <span class="fact-value">0</span>
+                  <span class="fact-value">1</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Wins:</span>
-                  <span class="fact-value">4</span>
+                  <span class="fact-value">12</span>
                 </div>
               </div>
             </div>
@@ -1535,19 +1535,19 @@
               </div>
             </div>
 
-            <!-- Costa Rican Team -->
-            <div class="team-card hidden" data-team="pura_vida">
-              <div class="team-logo">PVR</div>
-              <div class="team-name">Pura Vida Racing</div>
+            <!-- Venezuelan Team -->
+            <div class="team-card hidden" data-team="velocidad_venezuela">
+              <div class="team-logo">VVR</div>
+              <div class="team-name">Velocidad Venezuela</div>
               <div class="car-livery"></div>
               <div class="team-facts">
                 <div class="fact-row">
                   <span class="fact-label">Country:</span>
-                  <span class="fact-value">Costa Rica</span>
+                  <span class="fact-value">Venezuela</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Founded:</span>
-                  <span class="fact-value">2019</span>
+                  <span class="fact-value">2021</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Championships:</span>
@@ -1555,24 +1555,24 @@
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Wins:</span>
-                  <span class="fact-value">0</span>
+                  <span class="fact-value">1</span>
                 </div>
               </div>
             </div>
 
-            <!-- Somalian Team -->
-            <div class="team-card hidden" data-team="horn_velocity">
-              <div class="team-logo">HVR</div>
-              <div class="team-name">Horn Velocity</div>
+            <!-- Romanian Team -->
+            <div class="team-card hidden" data-team="thunder_racing">
+              <div class="team-logo">THR</div>
+              <div class="team-name">Thunder Racing</div>
               <div class="car-livery"></div>
               <div class="team-facts">
                 <div class="fact-row">
                   <span class="fact-label">Country:</span>
-                  <span class="fact-value">Somalia</span>
+                  <span class="fact-value">Romania</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Founded:</span>
-                  <span class="fact-value">2022</span>
+                  <span class="fact-value">2020</span>
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Championships:</span>
@@ -1580,7 +1580,7 @@
                 </div>
                 <div class="fact-row">
                   <span class="fact-label">Wins:</span>
-                  <span class="fact-value">0</span>
+                  <span class="fact-value">2</span>
                 </div>
               </div>
             </div>
@@ -1907,35 +1907,15 @@
     <script>
       // Team themes configuration with high contrast
       const teamThemes = {
-        // Irish Team - Green and Orange
-        emerald_isle: {
-          "--primary-color": "#228B22",
-          "--accent-color": "#FF8C00",
-          "--bg-primary": "#0a1a0a",
-          "--bg-secondary": "#1a2a1a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#88ff88",
-          "--border-glow": "rgba(34, 139, 34, 0.4)",
-        },
-        // Welsh Team - Red and Gold
-        dragon_force: {
-          "--primary-color": "#DC143C",
-          "--accent-color": "#FFD700",
+        // Croatian Team - Red, White, Blue
+        adriatic_racing: {
+          "--primary-color": "#FF0000",
+          "--accent-color": "#0066CC",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(220, 20, 60, 0.4)",
-        },
-        // Scottish Team - Blue and White
-        highland_racing: {
-          "--primary-color": "#003DA5",
-          "--accent-color": "#FFFFFF",
-          "--bg-primary": "#0a0a1a",
-          "--bg-secondary": "#1a1a2a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(0, 61, 165, 0.4)",
+          "--border-glow": "rgba(255, 0, 0, 0.4)",
         },
         // English Team - Dark Blue and Silver
         britannia_motors: {
@@ -1947,25 +1927,45 @@
           "--text-secondary": "#aaaaff",
           "--border-glow": "rgba(25, 25, 112, 0.4)",
         },
-        // French Team - Blue and Red
-        tricolore_racing: {
-          "--primary-color": "#0055A4",
-          "--accent-color": "#EF4135",
-          "--bg-primary": "#0a0a1a",
-          "--bg-secondary": "#1a1a2a",
+        // Chinese Team - Gold and Black
+        celestial_motors: {
+          "--primary-color": "#FFD700",
+          "--accent-color": "#1C1C1C",
+          "--bg-primary": "#1a1a0a",
+          "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(0, 85, 164, 0.4)",
+          "--text-secondary": "#ffcc88",
+          "--border-glow": "rgba(255, 215, 0, 0.4)",
         },
-        // German Team - Black and Red
-        kaiser_motorsport: {
-          "--primary-color": "#FF0000",
-          "--accent-color": "#000000",
+        // Welsh Team - Red and Gold
+        dragon_force: {
+          "--primary-color": "#DC143C",
+          "--accent-color": "#FFD700",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(255, 0, 0, 0.4)",
+          "--border-glow": "rgba(220, 20, 60, 0.4)",
+        },
+        // Irish Team - Green and Orange
+        emerald_isle: {
+          "--primary-color": "#228B22",
+          "--accent-color": "#FF8C00",
+          "--bg-primary": "#0a1a0a",
+          "--bg-secondary": "#1a2a1a",
+          "--text-primary": "#ffffff",
+          "--text-secondary": "#88ff88",
+          "--border-glow": "rgba(34, 139, 34, 0.4)",
+        },
+        // Scottish Team - Blue and White
+        highland_racing: {
+          "--primary-color": "#003DA5",
+          "--accent-color": "#FFFFFF",
+          "--bg-primary": "#0a0a1a",
+          "--bg-secondary": "#1a1a2a",
+          "--text-primary": "#ffffff",
+          "--text-secondary": "#88aaff",
+          "--border-glow": "rgba(0, 61, 165, 0.4)",
         },
         // Spanish Team - Red and Yellow
         iberian_speed: {
@@ -1977,60 +1977,30 @@
           "--text-secondary": "#ffaaaa",
           "--border-glow": "rgba(198, 11, 30, 0.4)",
         },
-        // Italian Team - Green, White, Red
-        veloce_italia: {
-          "--primary-color": "#009246",
-          "--accent-color": "#CE2B37",
-          "--bg-primary": "#0a1a0a",
-          "--bg-secondary": "#1a2a1a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#88ff88",
-          "--border-glow": "rgba(0, 146, 70, 0.4)",
-        },
-        // Croatian Team - Red, White, Blue
-        adriatic_racing: {
-          "--primary-color": "#FF0000",
-          "--accent-color": "#FFFFFF",
+        // German Team - Black and Red with Orange accents
+        kaiser_motorsport: {
+          "--primary-color": "#FF4500",
+          "--accent-color": "#000000",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(255, 0, 0, 0.4)",
+          "--text-secondary": "#ffaa66",
+          "--border-glow": "rgba(255, 69, 0, 0.4)",
         },
-        // US Team - Navy and Red
+        // US Team - Navy and Red with White accents
         liberty_racing: {
           "--primary-color": "#002868",
-          "--accent-color": "#BF0A30",
+          "--accent-color": "#FFFFFF",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#aaaaff",
           "--border-glow": "rgba(0, 40, 104, 0.4)",
         },
-        // Japanese Team - Red and White
-        rising_sun: {
-          "--primary-color": "#BC002D",
-          "--accent-color": "#FFFFFF",
-          "--bg-primary": "#1a0a0a",
-          "--bg-secondary": "#2a1a1a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(188, 0, 45, 0.4)",
-        },
-        // Chinese Team - Red and Gold
-        dragon_speed: {
-          "--primary-color": "#DE2910",
-          "--accent-color": "#FFDE00",
-          "--bg-primary": "#1a0a0a",
-          "--bg-secondary": "#2a1a1a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(222, 41, 16, 0.4)",
-        },
-        // Indian Team - Saffron and Green
+        // Indian Team - Saffron and Green with Blue accents
         maharaja_motors: {
           "--primary-color": "#FF9933",
-          "--accent-color": "#138808",
+          "--accent-color": "#000080",
           "--bg-primary": "#1a1a0a",
           "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
@@ -2047,47 +2017,77 @@
           "--text-secondary": "#88ff88",
           "--border-glow": "rgba(0, 151, 57, 0.4)",
         },
-        // Costa Rican Team - Blue and Red
-        pura_vida: {
-          "--primary-color": "#0F4C81",
-          "--accent-color": "#C8102E",
+        // Romanian Team - Blue, Yellow, Red
+        thunder_racing: {
+          "--primary-color": "#002B7F",
+          "--accent-color": "#FCD116",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(15, 76, 129, 0.4)",
+          "--border-glow": "rgba(0, 43, 127, 0.4)",
         },
-        // Somalian Team - Blue and White
-        horn_velocity: {
-          "--primary-color": "#4189DD",
+        // French Team - Blue and Red with White accents
+        tricolore_racing: {
+          "--primary-color": "#0055A4",
           "--accent-color": "#FFFFFF",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(65, 137, 221, 0.4)",
+          "--border-glow": "rgba(0, 85, 164, 0.4)",
+        },
+        // Japanese Team - Red and White with Black accents
+        rising_sun: {
+          "--primary-color": "#BC002D",
+          "--accent-color": "#000000",
+          "--bg-primary": "#1a0a0a",
+          "--bg-secondary": "#2a1a1a",
+          "--text-primary": "#ffffff",
+          "--text-secondary": "#ffaaaa",
+          "--border-glow": "rgba(188, 0, 45, 0.4)",
+        },
+        // Venezuelan Team - Yellow, Blue, Red
+        velocidad_venezuela: {
+          "--primary-color": "#FFCC00",
+          "--accent-color": "#003DA5",
+          "--bg-primary": "#1a1a0a",
+          "--bg-secondary": "#2a2a1a",
+          "--text-primary": "#ffffff",
+          "--text-secondary": "#ffcc88",
+          "--border-glow": "rgba(255, 204, 0, 0.4)",
+        },
+        // Italian Team - Green, White, Red
+        veloce_italia: {
+          "--primary-color": "#009246",
+          "--accent-color": "#CE2B37",
+          "--bg-primary": "#0a1a0a",
+          "--bg-secondary": "#1a2a1a",
+          "--text-primary": "#ffffff",
+          "--text-secondary": "#88ff88",
+          "--border-glow": "rgba(0, 146, 70, 0.4)",
         },
       };
 
       let selectedTeam = null;
       let currentTeamIndex = 0;
       const teams = [
-        "emerald_isle",
-        "dragon_force",
-        "highland_racing",
-        "britannia_motors",
-        "tricolore_racing",
-        "kaiser_motorsport",
-        "iberian_speed",
-        "veloce_italia",
         "adriatic_racing",
+        "britannia_motors", 
+        "celestial_motors",
+        "dragon_force",
+        "emerald_isle",
+        "highland_racing",
+        "iberian_speed",
+        "kaiser_motorsport",
         "liberty_racing",
-        "rising_sun",
-        "dragon_speed",
         "maharaja_motors",
+        "rising_sun",
         "samba_racing",
-        "pura_vida",
-        "horn_velocity",
+        "thunder_racing",
+        "tricolore_racing",
+        "velocidad_venezuela",
+        "veloce_italia",
       ];
 
       // Team selection functionality
@@ -2351,8 +2351,8 @@
       // Initialize team selection on page load
       document.addEventListener("DOMContentLoaded", () => {
         initializeTeamSelection();
-        // Set default theme to the first available team (Emerald Isle Racing)
-        applyTeamTheme("emerald_isle");
+        // Set default theme to the first available team (Adriatic Racing)
+        applyTeamTheme("adriatic_racing");
       });
 
       // Leaderboard system
