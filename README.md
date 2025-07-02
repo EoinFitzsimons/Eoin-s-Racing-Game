@@ -1,4 +1,4 @@
-# Circuit Racer - Championship Racing Game 🏎️
+# Eoin's Racing Game 🏎️
 
 A thrilling browser-based racing game featuring international racing teams, dynamic themes, and professional-grade racing simulation. Experience high-speed racing with realistic physics, AI opponents, and a comprehensive championship system.
 
@@ -6,7 +6,7 @@ A thrilling browser-based racing game featuring international racing teams, dyna
 
 ## 🎮 Game Overview
 
-Circuit Racer is an immersive top-down racing game where players can choose from 16 international racing teams, each with unique themes and characteristics. Race against AI opponents on challenging circuits with realistic physics, complete lap tracking, and professional broadcast-style presentation.
+Eoin's Racing Game is an immersive top-down racing game where players can choose from 16 international racing teams, each with unique themes and characteristics. Race against AI opponents on challenging circuits with realistic physics, complete lap tracking, and professional broadcast-style presentation.
 
 ## ✨ Features
 
