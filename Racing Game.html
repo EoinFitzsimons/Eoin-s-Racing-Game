@@ -2081,9 +2081,9 @@
         "kaiser_motorsport",
         "liberty_racing",
         "maharaja_motors",
-        "regina_curse",
         "rising_sun",
         "samba_racing",
+        "regina_curse",
         "tricolore_racing",
         "velocidad_venezuela",
         "veloce_italia",
@@ -2098,8 +2098,8 @@
       function populateTeamAttributes() {
         const teamCards = document.querySelectorAll(".team-card");
 
-        teamCards.forEach((card, index) => {
-          const teamKey = teams[index];
+        teamCards.forEach((card) => {
+          const teamKey = card.getAttribute("data-team");
           const teamMapping = {
             emerald_isle: "Emerald Isle Racing",
             dragon_force: "Dragon Force Motorsport",
@@ -2166,18 +2166,17 @@
 
       function updateCarousel() {
         const teamCards = document.querySelectorAll(".team-card");
-
-        teamCards.forEach((card, index) => {
+        const currentTeam = teams[currentTeamIndex];
+        
+        teamCards.forEach((card) => {
+          const cardTeam = card.getAttribute("data-team");
           card.classList.remove("active", "prev", "next", "hidden");
-
-          if (index === currentTeamIndex) {
+          
+          if (cardTeam === currentTeam) {
             card.classList.add("active");
-          } else if (
-            index ===
-            (currentTeamIndex - 1 + teams.length) % teams.length
-          ) {
+          } else if (cardTeam === teams[(currentTeamIndex - 1 + teams.length) % teams.length]) {
             card.classList.add("prev");
-          } else if (index === (currentTeamIndex + 1) % teams.length) {
+          } else if (cardTeam === teams[(currentTeamIndex + 1) % teams.length]) {
             card.classList.add("next");
           } else {
             card.classList.add("hidden");
@@ -2185,7 +2184,6 @@
         });
 
         // Apply theme of current team
-        const currentTeam = teams[currentTeamIndex];
         applyTeamTheme(currentTeam);
 
         // Auto-select the current team
