@@ -2335,15 +2335,16 @@
        */
       function resetCameraTransform() {
         ctx.restore();
-      }
-
-      // Game state
+      }        // Game state
       let gameRunning = false;
       let raceStartTime = 0;
       let currentLap = 1;
       let totalLaps = 5;
       let raceComplete = false;
       let currentRaceTime = 0;
+      let playerFinished = false;
+      let allCarsFinished = false;
+      let raceResults = []; // Will store final race results for all cars
 
       // Initialize team selection on page load
       document.addEventListener("DOMContentLoaded", () => {
@@ -2544,9 +2545,9 @@
       const player = {
         // Position and orientation
         x: 1000, // X coordinate on track
-        y: 1300, // Y coordinate - positioned at start/finish line
+        y: 1350, // Y coordinate - positioned BEHIND the start/finish line (which is at y=1300)
         angle: -Math.PI / 2, // Car direction in radians (pointing upward initially)
-        velocity: { x: 0, y: 0 }, // Current velocity vector
+        velocity: { x: 0, y: -0.1 }, // Current velocity vector with small initial upward motion
         speed: 0, // Magnitude of velocity for display purposes
 
         // Base performance stats (before team modifications)
@@ -3363,10 +3364,10 @@
 
           const aiCar = {
             x: 1000 + (gridSide === 0 ? -30 : 30), // Grid spacing left/right of centerline
-            y: 1300 + gridRow * 35 + staggerOffset, // Position BEHIND player (larger Y values = behind)
+            y: 1350 + gridRow * 35 + staggerOffset, // Position BEHIND start/finish line (at y=1300)
             angle: -Math.PI / 2, // Point upward initially
-            velocity: { x: 0, y: 0 },
-            speed: 0,
+            velocity: { x: 0, y: -0.1 }, // Small initial velocity pointing upward (negative Y)
+            speed: 0.1, // Small initial speed
             // Core performance stats affected by team attributes
             maxSpeed: (7.8 + Math.random() * 0.6) * speedMultiplier,
             acceleration: (0.2 + Math.random() * 0.04) * accelMultiplier,
@@ -3869,14 +3870,15 @@
 
       function handleRaceStartProtection(ai) {
         const raceTime = gameRunning ? (Date.now() - raceStartTime) / 1000 : 0;
-        if (raceTime < 3) {
-          const desiredAngle = -Math.PI / 2;
-          let angleDiff = desiredAngle - ai.angle;
-          while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-          while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-          if (Math.abs(angleDiff) > Math.PI / 4) {
-            ai.angle += Math.sign(angleDiff) * 0.1;
+        
+        // Only apply race start protection during the actual race, not before it starts
+        if (gameRunning && raceTime < 3) {
+          // Provide a gentle forward impulse to ensure cars move forward across the start line
+          // This helps them pick up the start/finish checkpoint
+          if (ai.velocity.y > -0.5) {
+            // Only add velocity if they're not already moving fast enough
+            // This is a gentle boost that doesn't force orientation, just helps ensure movement
+            ai.velocity.y = Math.min(ai.velocity.y - 0.1, -0.5);
           }
         }
       }
@@ -4292,8 +4294,9 @@
           // Wide finish line area spans the track width to catch cars using inside/outside lines
           const finishY = nextCheckpoint.y;
           const finishCenterX = nextCheckpoint.x;
-          const finishWidth = 240;
-          const finishHeight = 80;
+          // Extra-wide finish line detection area to ensure reliable checkpoint detection
+          const finishWidth = 350;  // Further increased width 
+          const finishHeight = 150; // Further increased height
 
           // Check if car is within the finish line area
           if (
