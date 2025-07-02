@@ -38,7 +38,7 @@ Each team features:
 - **Unique color schemes** reflecting national identities
 - **Custom visual themes** that change the entire game interface
 - **Team statistics** including championships, wins, and founding year
-- **Professional team logos** and liveries
+- **Team liveries** with unique colours
 
 ### 🏎️ Racing Features
 
