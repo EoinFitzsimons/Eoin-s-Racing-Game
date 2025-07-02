@@ -26,7 +26,7 @@ Choose from **16 international racing teams**, each representing different count
 - **![India](https://flagcdn.com/w20/in.png) Maharaja Motors (MHJ)** - Speed: 83, Acceleration: 87, Handling: 90
 - **![Japan](https://flagcdn.com/w20/jp.png) Rising Sun Motors (RSM)** - Speed: 86, Acceleration: 92, Handling: 88
 - **![Brazil](https://flagcdn.com/w20/br.png) Samba Racing Team (SRT)** - Speed: 87, Acceleration: 89, Handling: 84
-- **![Romania](https://flagcdn.com/w20/ro.png) Thunder Racing (THR)** - Speed: 84, Acceleration: 83, Handling: 93
+- **![Romania](https://flagcdn.com/w20/ro.png) Regina Curse (RGC)** - Speed: 84, Acceleration: 83, Handling: 93
 - **![France](https://flagcdn.com/w20/fr.png) Tricolore Racing (TCR)** - Speed: 89, Acceleration: 87, Handling: 89
 - **![Venezuela](https://flagcdn.com/w20/ve.png) Velocidad Venezuela (VVR)** - Speed: 81, Acceleration: 85, Handling: 89
 - **![Italy](https://flagcdn.com/w20/it.png) Veloce Italia (VIT)** - Speed: 90, Acceleration: 84, Handling: 91
