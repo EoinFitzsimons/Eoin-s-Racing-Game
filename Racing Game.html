@@ -4579,30 +4579,54 @@
       function calculateGapInSeconds(leader, currentCar, position) {
         // Calculate gap based solely on real lap time data
         
-        // If leader and car have identical timing data, this must be the leader
+        // If leader and car are identical, return 0
         if (leader === currentCar) {
           return 0;
         }
         
-        // Get total race time for both cars (completed laps + current lap progress)
-        let leaderTime = leader.totalRaceTime;
-        let currentCarTime = currentCar.totalRaceTime;
+        const lapDifference = leader.lapsCompleted - currentCar.lapsCompleted;
+        
+        // Get total race time for both cars (completed laps only)
+        let leaderRaceTime = leader.totalRaceTime || 0;
+        let currentCarRaceTime = currentCar.totalRaceTime || 0;
         
         // Add current lap progress time for both cars
         const currentTime = Date.now();
         
+        // Add the time of the current lap in progress
+        let leaderCurrentLapTime = 0;
+        let currentCarCurrentLapTime = 0;
+        
         if (leader.currentLapStartTime > 0) {
-          leaderTime += (currentTime - leader.currentLapStartTime) / 1000;
+          leaderCurrentLapTime = (currentTime - leader.currentLapStartTime) / 1000;
+          leaderRaceTime += leaderCurrentLapTime;
         }
         
         if (currentCar.currentLapStartTime > 0) {
-          currentCarTime += (currentTime - currentCar.currentLapStartTime) / 1000;
+          currentCarCurrentLapTime = (currentTime - currentCar.currentLapStartTime) / 1000;
+          currentCarRaceTime += currentCarCurrentLapTime;
         }
         
-        // Calculate gap based on difference in total race times
-        const gap = currentCarTime - leaderTime;
+        // Calculate a more accurate gap based on lap difference and actual times
+        let gap;
         
-        // Return the calculated gap, ensuring it's positive
+        if (lapDifference === 0) {
+          // On same lap: simple time difference
+          gap = currentCarRaceTime - leaderRaceTime;
+        } else if (lapDifference > 0) {
+          // Leader is ahead by laps: use average lap time to estimate gap
+          const leaderAvgLapTime = leader.lapTimes.length > 0 ? 
+            leader.lapTimes.reduce((sum, time) => sum + time, 0) / leader.lapTimes.length : 
+            60; // Default estimate if no lap data
+            
+          // Add (lapDifference * avg lap time) to the basic time difference
+          gap = (currentCarRaceTime - leaderRaceTime) + (lapDifference * leaderAvgLapTime);
+        } else {
+          // Leader is behind by laps (shouldn't happen, but just in case)
+          gap = currentCarRaceTime - leaderRaceTime;
+        }
+        
+        // Return the calculated gap, ensuring it's at least 0.1s for display purposes
         return Math.max(gap, 0.1);
       }
 
