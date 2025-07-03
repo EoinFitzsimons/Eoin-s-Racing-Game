@@ -1651,6 +1651,10 @@
           <div class="broadcast-label">BEST LAP</div>
           <div class="broadcast-value" id="bestLapTimeDisplay">-:--:---</div>
         </div>
+        <div class="broadcast-section">
+          <div class="broadcast-label">LAP RECORD</div>
+          <div class="broadcast-value" id="lapRecordDisplay">-:--:---</div>
+        </div>
       </div>
 
       <div class="ui-overlay">
@@ -1872,6 +1876,13 @@
           <span
             id="bestLapTime"
             style="color: var(--accent-color); font-weight: bold"
+          ></span>
+        </p>
+        <p style="font-size: 1.2rem; margin: 0.5rem 0">
+          Lap Record:
+          <span
+            id="lapRecordTime"
+            style="color: var(--primary-color); font-weight: bold"
           ></span>
         </p>
         <p
@@ -2410,7 +2421,9 @@
       // Lap timing variables
       let lapStartTime = 0;
       let currentLapTime = 0;
-      let bestLapTime = Number.MAX_VALUE;
+      let bestLapTime = Number.MAX_VALUE; // Best lap time in current race
+      let lapRecord = Number.MAX_VALUE; // All-time best lap (persists between races)
+      let lastLapTime = 0; // Last completed lap time
       let lapTimes = [];
 
       // Initialize team selection on page load
@@ -4515,10 +4528,61 @@
                   // Additional tracking for player car
                   if (car === player) {
                     currentLapTime = lapTime;
+                    lastLapTime = lapTime; // Store the last completed lap time
                     lapTimes.push(currentLapTime);
 
+                    // Update best lap time for current race
                     if (currentLapTime < bestLapTime) {
                       bestLapTime = currentLapTime;
+                      
+                      // Check if this is also an all-time lap record
+                      if (currentLapTime < lapRecord) {
+                        lapRecord = currentLapTime;
+                        
+                        // Show a lap record notification
+                        const notification = document.createElement("div");
+                        notification.className = "lap-record-notification";
+                        notification.textContent = "NEW LAP RECORD!";
+                        notification.style.cssText = `
+                          position: absolute;
+                          top: 30%;
+                          left: 50%;
+                          transform: translate(-50%, -50%);
+                          background: rgba(255, 215, 0, 0.8);
+                          color: #000;
+                          padding: 15px 30px;
+                          border-radius: 8px;
+                          font-family: 'Orbitron', sans-serif;
+                          font-size: 24px;
+                          font-weight: bold;
+                          box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+                          z-index: 9999;
+                          animation: recordPulse 2s forwards;
+                        `;
+                        document.body.appendChild(notification);
+                        
+                        // Add CSS animation if not already added
+                        if (!document.getElementById("recordAnimation")) {
+                          const style = document.createElement("style");
+                          style.id = "recordAnimation";
+                          style.textContent = `
+                            @keyframes recordPulse {
+                              0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+                              20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+                              40% { transform: translate(-50%, -50%) scale(0.9); }
+                              60% { transform: translate(-50%, -50%) scale(1.1); }
+                              80% { opacity: 1; }
+                              100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+                            }
+                          `;
+                          document.head.appendChild(style);
+                        }
+                        
+                        // Remove notification after animation
+                        setTimeout(() => {
+                          notification.remove();
+                        }, 2000);
+                      }
                     }
 
                     // Update player's lap start time
@@ -4598,6 +4662,42 @@
 
         // Race only ends when the player completes their 5th lap
         if (player.lapsCompleted >= totalLaps && !raceComplete) {
+          // Save final race standings before marking race as complete
+          const finalStandings = [
+            { ...player, name: "Player", isPlayer: true },
+            ...aiCars,
+          ];
+          
+          // Calculate final race progress for all cars
+          calculateRaceProgress(finalStandings);
+          
+          // Sort cars by race progress
+          finalStandings.sort((a, b) => {
+            // First sort by laps completed
+            if (b.lapsCompleted !== a.lapsCompleted) {
+              return b.lapsCompleted - a.lapsCompleted;
+            }
+
+            // Then by checkpoint within the same lap
+            if (b.currentCheckpoint !== a.currentCheckpoint) {
+              return b.currentCheckpoint - a.currentCheckpoint;
+            }
+
+            // If at same lap and checkpoint, sort by calculated race time
+            return a.calculatedTotalTime - b.calculatedTotalTime;
+          });
+          
+          // Save position information
+          finalStandings.forEach((car, index) => {
+            car.racePosition = index + 1;
+            if (car.isPlayer) {
+              player.racePosition = index + 1;
+            }
+          });
+          
+          // Store these standings for use after race completion
+          finalRaceStandings = finalStandings;
+          
           raceComplete = true;
           gameRunning = false;
           showRaceComplete();
@@ -4789,8 +4889,11 @@
         const positionList = document.getElementById("positionList");
         positionList.innerHTML = "";
 
-        allCars.forEach((car, index) => {
-          const positionItem = createPositionDisplayItem(car, index, allCars);
+        // Use finalRaceStandings instead of allCars if race is complete
+        const carsToDisplay = raceComplete ? finalRaceStandings : allCars;
+
+        carsToDisplay.forEach((car, index) => {
+          const positionItem = createPositionDisplayItem(car, index, carsToDisplay);
           positionList.appendChild(positionItem);
         });
       }
@@ -4810,15 +4913,40 @@
           carName = words.slice(0, 2).join(" ");
         }
 
+        // Get sector and lap info that doesn't reset after race completion
+        const lapDisplay = raceComplete ? 
+          `Lap ${car.lapsCompleted}/${totalLaps}` : 
+          `Lap ${car.lapsCompleted}/${totalLaps}`;
+          
+        // Get current sector
+        let sector = "S1";
+        if (car.currentCheckpoint >= Math.floor(track.checkpoints.length * 0.6)) {
+          sector = "S/F"; // Final sector approaching finish line
+        } else if (car.currentCheckpoint >= Math.floor(track.checkpoints.length * 0.3)) {
+          sector = "S2"; // Middle sector
+        }
+        
+        // Format last lap time
+        let lastLapDisplay = "--:--";
+        if (car.lapTimes && car.lapTimes.length > 0) {
+          const lastLapTime = car.lapTimes[car.lapTimes.length - 1];
+          const lastLapMinutes = Math.floor(lastLapTime / 60);
+          const lastLapSeconds = (lastLapTime % 60).toFixed(3);
+          lastLapDisplay = `${lastLapMinutes}:${lastLapSeconds.padStart(6, "0")}`;
+        }
+
         const gapText = calculateGapText(car, index, allCars);
         const carNameColor = car.isPlayer ? "var(--primary-color)" : "#ffffff";
+
+        // Include raw time for debugging
+        const rawTime = car.calculatedTotalTime ? car.calculatedTotalTime.toFixed(6) : "0.000000";
 
         div.innerHTML = `
           <span style="color: #cccccc; font-weight: 600; width: 25px; display: inline-block;">${positionText}</span>
           <span style="color: ${carNameColor}; font-weight: ${
           car.isPlayer ? "700" : "400"
         }; flex: 1; max-width: 100px;">${carName}</span>
-          <span style="color: #aaaaaa; font-size: 0.8rem; min-width: 45px; text-align: right;">${gapText}</span>
+          <span style="color: #aaaaaa; font-size: 0.8rem;">${lapDisplay} | ${sector} | Last: ${lastLapDisplay} | ${gapText} | Raw: ${rawTime}s</span>
         `;
 
         return div;
@@ -6200,13 +6328,16 @@
       function updateUI() {
         const speedValue = Math.round(player.speed * 20);
 
+        // Use player position from finalRaceStandings if race is complete
+        const playerPosition = raceComplete ? player.racePosition : player.racePosition;
+
         // Update existing UI
         document.getElementById("speed").textContent = speedValue + " km/h";
         document.getElementById(
           "lap"
         ).textContent = `${currentLap}/${totalLaps}`;
         document.getElementById("position").textContent = `${
-          player.racePosition
+          playerPosition
         }/${aiCars.length + 1}`;
 
         // Update broadcast bar
@@ -6217,7 +6348,7 @@
         ).textContent = `${currentLap}/${totalLaps}`;
         document.getElementById(
           "positionDisplay"
-        ).textContent = `P${player.racePosition}`;
+        ).textContent = `P${playerPosition}`;
 
         // Update nitro bar
         const nitroPercentage = (player.nitro / player.maxNitro) * 100;
@@ -6253,7 +6384,7 @@
             ).textContent = `${lapMinutes}:${lapSeconds.padStart(6, "0")}`;
           }
 
-          // Best lap time
+          // Best lap time for current race
           if (bestLapTime < Number.MAX_VALUE) {
             const bestLapMinutes = Math.floor(bestLapTime / 60);
             const bestLapSeconds = (bestLapTime % 60).toFixed(3);
@@ -6263,6 +6394,22 @@
               6,
               "0"
             )}`;
+          } else {
+            document.getElementById("bestLapTimeDisplay").textContent = "-:--:---";
+          }
+          
+          // All-time lap record
+          if (lapRecord < Number.MAX_VALUE) {
+            const recordMinutes = Math.floor(lapRecord / 60);
+            const recordSeconds = (lapRecord % 60).toFixed(3);
+            document.getElementById(
+              "lapRecordDisplay"
+            ).textContent = `${recordMinutes}:${recordSeconds.padStart(
+              6,
+              "0"
+            )}`;
+          } else {
+            document.getElementById("lapRecordDisplay").textContent = "-:--:---";
           }
 
           // Race time
@@ -6391,6 +6538,20 @@
         } else {
           document.getElementById("bestLapTime").textContent = "No valid lap";
         }
+        
+        // Display lap record
+        if (lapRecord < Number.MAX_VALUE) {
+          const recordMinutes = Math.floor(lapRecord / 60);
+          const recordSeconds = (lapRecord % 60).toFixed(3);
+          document.getElementById(
+            "lapRecordTime"
+          ).textContent = `${recordMinutes}:${recordSeconds.padStart(
+            6,
+            "0"
+          )}`;
+        } else {
+          document.getElementById("lapRecordTime").textContent = "No record set";
+        }
 
         // Show leaderboard at race end
         updateLeaderboardDisplay();
@@ -6467,6 +6628,9 @@
        * Executes every frame to update game state and render all visual elements.
        * This function coordinates all game systems in the correct order.
        */
+      // Store final race standings when race completes
+      let finalRaceStandings = [];
+      
       function gameLoop() {
         if (gameRunning) {
           // Update player car physics and input handling
@@ -6531,11 +6695,15 @@
         raceStartTime = Date.now();
         currentLap = 1;
         raceComplete = false;
+        
+        // Clear the final race standings
+        finalRaceStandings = [];
 
         // Reset lap timing
         lapStartTime = 0;
         currentLapTime = 0;
-        bestLapTime = Number.MAX_VALUE;
+        bestLapTime = Number.MAX_VALUE; // Reset best lap time for this race
+        lastLapTime = 0; // Reset last lap time
         lapTimes = [];
 
         // Reset lap timing and race properties for player
@@ -6627,6 +6795,7 @@
         lapStartTime = 0;
         currentLapTime = 0;
         bestLapTime = Number.MAX_VALUE;
+        lastLapTime = 0;
         lapTimes = [];
 
         startRace();
@@ -6640,6 +6809,7 @@
         lapStartTime = 0;
         currentLapTime = 0;
         bestLapTime = Number.MAX_VALUE;
+        lastLapTime = 0;
         lapTimes = [];
 
         // Hide broadcast bar and game UI
