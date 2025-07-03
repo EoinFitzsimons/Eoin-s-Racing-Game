@@ -602,6 +602,67 @@
         color: var(--text-secondary);
         font-size: 1rem;
       }
+      
+      /* Difficulty selector styles */
+      .difficulty-selector {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.02)
+        );
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+      
+      .difficulty-selector h3 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+      }
+      
+      .difficulty-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      
+      .difficulty-btn {
+        flex: 1;
+        padding: 0.6rem 0.5rem;
+        margin: 0 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: bold;
+      }
+      
+      .difficulty-btn:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--primary-color);
+      }
+      
+      .difficulty-btn.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 15px var(--border-glow);
+      }
+      
+      .difficulty-description {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        min-height: 40px;
+      }
 
       .race-complete {
         position: absolute;
@@ -1544,6 +1605,18 @@
           </p>
           <p>Beat the competition and set new lap records!</p>
         </div>
+        
+        <div class="difficulty-selector">
+          <h3>Select Difficulty</h3>
+          <div class="difficulty-buttons">
+            <button class="difficulty-btn" onclick="setDifficulty('easy')" id="easyBtn">Easy</button>
+            <button class="difficulty-btn active" onclick="setDifficulty('medium')" id="mediumBtn">Medium</button>
+            <button class="difficulty-btn" onclick="setDifficulty('hard')" id="hardBtn">Hard</button>
+          </div>
+          <div class="difficulty-description" id="difficultyDescription">
+            Standard race settings. AI makes occasional mistakes. Collisions enabled.
+          </div>
+        </div>
       </div>
 
       <canvas id="gameCanvas" width="1400" height="900"></canvas>
@@ -2215,26 +2288,21 @@
 
           // Calculate performance multipliers from team attributes (1-20 scale converted to meaningful multipliers)
           // Each team attribute affects different aspects of car performance
-          const speedMultiplier = 1.0 + (teamData.attributes.speed / 20) * 1.0; // Max speed scaling
-          const accelMultiplier =
-            1.0 + (teamData.attributes.acceleration / 20) * 1.0; // Acceleration force scaling
-          const handlingMultiplier =
-            1.0 + (teamData.attributes.handling / 20) * 1.0; // Turn rate scaling
-          const brakingMultiplier =
-            1.0 + (teamData.attributes.braking / 20) * 1.0; // Braking force scaling
-          const reliabilityMultiplier =
-            0.8 + (teamData.attributes.reliability / 20) * 0.4; // Damage resistance (0.8-1.2)
-          const tireMultiplier =
-            0.8 + (teamData.attributes.tireManagement / 20) * 0.4; // Tire wear reduction (0.8-1.2)
+          // Apply the same multipliers as AI cars for consistency
+          const playerMultiplier = difficultySettings[gameDifficulty].playerAttributeMultiplier;
+          const speedMultiplier = (1.0 + (teamData.attributes.speed / 20) * 1.0) * playerMultiplier; // Max speed scaling
+          const accelMultiplier = (1.0 + (teamData.attributes.acceleration / 20) * 1.0) * playerMultiplier; // Acceleration force scaling
+          const handlingMultiplier = (1.0 + (teamData.attributes.handling / 20) * 1.0) * playerMultiplier; // Turn rate scaling
+          const brakingMultiplier = (1.0 + (teamData.attributes.braking / 20) * 1.0) * playerMultiplier; // Braking force scaling
+          const reliabilityMultiplier = (0.8 + (teamData.attributes.reliability / 20) * 0.4) * playerMultiplier; // Damage resistance (0.8-1.2)
+          const tireMultiplier = (0.8 + (teamData.attributes.tireManagement / 20) * 0.4) * playerMultiplier; // Tire wear reduction (0.8-1.2)
 
           // Apply calculated multipliers to base car performance stats
           player.maxSpeed = player.baseMaxSpeed * speedMultiplier;
           player.acceleration = player.baseAcceleration * accelMultiplier;
           player.turnSpeed = player.baseTurnSpeed * handlingMultiplier;
-          // Braking system: friction and braking power both scale with braking attribute
           player.friction = player.baseFriction * brakingMultiplier;
-          player.brakingPower =
-            (player.baseBrakingPower || 0.15) * brakingMultiplier;
+          player.brakingPower = (player.baseBrakingPower || 0.15) * brakingMultiplier;
 
           // Tire and reliability systems
           player.tireWearRate = 0.4 / tireMultiplier; // Better tire management = slower wear
@@ -2310,6 +2378,34 @@
       let totalLaps = 5;
       let raceComplete = false;
       let currentRaceTime = 0;
+      
+      // Difficulty settings
+      let gameDifficulty = "medium"; // "easy", "medium", "hard"
+      const difficultySettings = {
+        easy: {
+          aiAttributeMultiplier: 0.85, // AI cars have reduced attributes
+          playerAttributeMultiplier: 1.0, // Player attributes unchanged
+          collisionsEnabled: false, // No collisions on Easy
+          aiMistakesEnabled: true, // AI makes mistakes
+          aiMistakeFrequency: 1.5, // Higher frequency of mistakes
+          aiReactionTime: 1.3 // Slower reaction time
+        },
+        medium: {
+          aiAttributeMultiplier: 1.0, // Normal AI attributes
+          playerAttributeMultiplier: 1.0, // Normal player attributes
+          collisionsEnabled: true, // Collisions enabled
+          aiMistakesEnabled: true, // AI makes mistakes
+          aiMistakeFrequency: 1.0, // Normal mistake frequency
+          aiReactionTime: 1.0 // Normal reaction time
+        },
+        hard: {
+          aiAttributeMultiplier: 1.15, // Enhanced AI attributes
+          playerAttributeMultiplier: 1.0, // Player attributes unchanged
+          collisionsEnabled: true, // Collisions enabled
+          aiMistakesEnabled: false, // AI doesn't make mistakes
+          aiReactionTime: 0.7 // Faster reaction time
+        }
+      };
 
       // Lap timing variables
       let lapStartTime = 0;
@@ -2322,6 +2418,9 @@
         initializeTeamSelection();
         // Set default theme to the first available team (Adriatic Racing)
         applyTeamTheme("adriatic_racing");
+        
+        // Initialize difficulty selector with medium selected
+        setDifficulty("medium");
       });
 
       // Leaderboard system
@@ -2366,6 +2465,28 @@
       function skipLeaderboard() {
         document.getElementById("nameInputModal").style.display = "none";
         document.getElementById("raceComplete").style.display = "block";
+      }
+      
+      // Difficulty selection functionality
+      function setDifficulty(level) {
+        // Update the game difficulty
+        gameDifficulty = level;
+        
+        // Update UI
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.getElementById(level + 'Btn').classList.add('active');
+        
+        // Update description
+        const descriptionElement = document.getElementById('difficultyDescription');
+        if (level === 'easy') {
+          descriptionElement.textContent = 'Beginner friendly. Collisions disabled. AI makes more mistakes and has reduced performance.';
+        } else if (level === 'medium') {
+          descriptionElement.textContent = 'Standard race settings. AI makes occasional mistakes. Collisions enabled.';
+        } else if (level === 'hard') {
+          descriptionElement.textContent = 'Challenge mode. AI doesn\'t make mistakes and has enhanced performance. Collisions enabled.';
+        }
       }
 
       function updateRaceCompleteLeaderboard() {
@@ -2987,9 +3108,10 @@
             this.line_change_timer = 100 + Math.random() * 300;
           }
 
-          // Occasional mistakes based on smoothness
+          // Occasional mistakes based on smoothness and difficulty settings
           if (
-            Math.random() < this.mistake_chance &&
+            difficultySettings[gameDifficulty].aiMistakesEnabled &&
+            Math.random() < this.mistake_chance * difficultySettings[gameDifficulty].aiMistakeFrequency &&
             Date.now() - this.last_mistake_time > 2000
           ) {
             this.makeMistake();
@@ -3352,6 +3474,9 @@
         const availableTeams = aiTeams.filter(
           (team) => team.name !== playerTeamName
         );
+        
+        // Get the difficulty multiplier from current settings
+        const difficultyMultiplier = difficultySettings[gameDifficulty].aiAttributeMultiplier;
 
         for (let i = 0; i < availableTeams.length; i++) {
           // Use all 15 remaining teams
@@ -3365,16 +3490,13 @@
           const staggerOffset = gridSide === 0 ? -3 : 3; // Left cars slightly ahead
 
           // Calculate team multipliers from attributes (scale: 1-20, normalized to 1.0-2.0 for better performance)
-          const speedMultiplier = 1.0 + (team.attributes.speed / 20) * 1.0;
-          const accelMultiplier =
-            1.0 + (team.attributes.acceleration / 20) * 1.0;
-          const handlingMultiplier =
-            1.0 + (team.attributes.handling / 20) * 1.0;
-          const brakingMultiplier = 1.0 + (team.attributes.braking / 20) * 1.0;
-          const reliabilityMultiplier =
-            0.8 + (team.attributes.reliability / 20) * 0.4;
-          const tireMultiplier =
-            0.8 + (team.attributes.tireManagement / 20) * 0.4;
+          // Apply difficulty multiplier to AI car attributes
+          const speedMultiplier = (1.0 + (team.attributes.speed / 20) * 1.0) * difficultyMultiplier;
+          const accelMultiplier = (1.0 + (team.attributes.acceleration / 20) * 1.0) * difficultyMultiplier;
+          const handlingMultiplier = (1.0 + (team.attributes.handling / 20) * 1.0) * difficultyMultiplier;
+          const brakingMultiplier = (1.0 + (team.attributes.braking / 20) * 1.0) * difficultyMultiplier;
+          const reliabilityMultiplier = (0.8 + (team.attributes.reliability / 20) * 0.4) * difficultyMultiplier;
+          const tireMultiplier = (0.8 + (team.attributes.tireManagement / 20) * 0.4) * difficultyMultiplier;
 
           const aiCar = {
             x: 1000 + (gridSide === 0 ? -30 : 30), // Grid spacing left/right of centerline
@@ -3436,6 +3558,22 @@
 
           // Add AI behavior engine
           aiCar.behavior = new AIBehavior(aiCar);
+          
+          // Apply difficulty-specific adjustments to behavior
+          if (gameDifficulty === "hard") {
+            // Hard: Perfect AI - Higher awareness and consistency
+            aiCar.behavior.awareness = Math.min(1.0, aiCar.behavior.awareness * 1.3);
+            aiCar.behavior.smoothness = Math.min(1.0, aiCar.behavior.smoothness * 1.3);
+            aiCar.behavior.pace_consistency = Math.min(1.0, aiCar.behavior.pace_consistency * 1.2);
+            aiCar.behavior.mistake_chance = 0; // No mistakes on hard
+          } else if (gameDifficulty === "easy") {
+            // Easy: More forgiving AI - Lower aggression and racing skill
+            aiCar.behavior.aggressiveness *= 0.7;
+            aiCar.behavior.cornering_skill *= 0.8;
+            aiCar.behavior.mistake_chance *= 1.5; // More mistakes on easy
+            aiCar.behavior.reaction_time *= 1.3; // Slower reactions
+          }
+          
           aiCars.push(aiCar);
         }
       }
@@ -3459,6 +3597,11 @@
        * - Race time is within protection window (15 seconds)
        */
       function handleCarCollisions() {
+        // Skip collision handling entirely if collisions are disabled in difficulty settings
+        if (!difficultySettings[gameDifficulty].collisionsEnabled) {
+          return;
+        }
+        
         const allCars = [player, ...aiCars];
 
         // Ghosting system prevents collisions during race start when cars are close together
@@ -6261,11 +6404,11 @@
         );
         const isNewRecord =
           leaderboard.length < 10 ||
-          elapsed < sortedLeaderboard[sortedLeaderboard.length - 1]?.time;
+          currentRaceTime < sortedLeaderboard[sortedLeaderboard.length - 1]?.time;
         const recordTime = sortedLeaderboard[0]?.time;
 
         if (isNewRecord) {
-          if (recordTime && elapsed < recordTime) {
+          if (recordTime && currentRaceTime < recordTime) {
             // New fastest time
             document.getElementById("newRecordText").textContent =
               "NEW FASTEST TIME";
@@ -6287,7 +6430,7 @@
           // Calculate leaderboard position if this time was added
           let position = 1;
           for (const entry of sortedLeaderboard) {
-            if (elapsed > entry.time) {
+            if (currentRaceTime > entry.time) {
               position++;
             } else {
               break;
@@ -6296,7 +6439,7 @@
 
           // Calculate split from record
           if (recordTime) {
-            const split = elapsed - recordTime;
+            const split = currentRaceTime - recordTime;
             const splitMinutes = Math.floor(split / 60);
             const splitSeconds = (split % 60).toFixed(3);
             const splitText =
