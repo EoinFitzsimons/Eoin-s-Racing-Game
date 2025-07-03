@@ -4482,18 +4482,39 @@
             Date.now() - (this.lastDebugTime || 0) > 5000);
 
         if (shouldLog) {
+          // Format: Name | Lap X/5 | Sector Y | Last Lap: MM:SS.sss | Gap: +X.Xs
           const debugText = allCars
-            .map(
-              (car) =>
-                `${car.name || "Player"}: L${car.lapsCompleted} C${
-                  car.currentCheckpoint
-                } P${car.raceProgress.toFixed(3)}`
-            )
-            .join(" | ");
+            .map((car, index) => {
+              // Format lap info
+              const lapInfo = `Lap ${car.lapsCompleted}/${totalLaps}`;
+              
+              // Format sector info
+              const sectorMap = {0: "S/F", 1: "S1", 2: "S2"};
+              const sector = sectorMap[car.currentCheckpoint] || "??";
+              
+              // Format last lap time
+              const lastLapTime = car.lapTimes.length > 0 
+                ? formatTime(car.lapTimes[car.lapTimes.length - 1]) 
+                : "--:--";
+              
+              // Format gap to leader
+              const gapText = index === 0 ? "LEADER" : 
+                calculateGapText(car, index, allCars);
+              
+              return `${car.name || "Player"} | ${lapInfo} | ${sector} | Last: ${lastLapTime} | ${gapText}`;
+            })
+            .join("\n");
 
-          console.log("Position Update:", debugText);
+          console.log("RACE STANDINGS:\n" + debugText);
           this.lastDebugTime = Date.now();
         }
+      }
+
+      // Helper function to format time as MM:SS.sss
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(3);
+        return `${minutes}:${secs.padStart(6, '0')}`;
       }
 
       function updateCarPositions(allCars) {
