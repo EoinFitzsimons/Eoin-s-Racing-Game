@@ -2572,6 +2572,10 @@
         tireWearRate: 0.4, // Rate of tire degradation per frame
         reliabilityFactor: 1.0, // Affects chance of mechanical failures
         lastCollisionTime: 0,
+        // Lap time tracking for accurate gap calculation
+        lapTimes: [], // Array of completed lap times in seconds
+        currentLapStartTime: 0, // When current lap started
+        totalRaceTime: 0, // Sum of all completed lap times
         // Checkpoint timing for gap calculations
         checkpointTimes: {},
       };
@@ -3394,6 +3398,10 @@
             steerAngle: 0,
             angularVelocity: 0,
             weightTransfer: 0,
+            // Lap time tracking for accurate gap calculation
+            lapTimes: [], // Array of completed lap times in seconds
+            currentLapStartTime: 0, // When current lap started
+            totalRaceTime: 0, // Sum of all completed lap times
             // Checkpoint timing for gap calculations
             checkpointTimes: {},
           };
@@ -4322,18 +4330,32 @@
               // Completed a full lap
               car.lapsCompleted++;
               
-              // Track lap times for player
-              if (car === player && gameRunning) {
+              // Track lap times for all cars
+              if (gameRunning) {
                 const currentTime = Date.now();
-                currentLapTime = (currentTime - lapStartTime) / 1000;
-                lapTimes.push(currentLapTime);
                 
-                if (currentLapTime < bestLapTime) {
-                  bestLapTime = currentLapTime;
+                // Calculate and store lap time
+                if (car.currentLapStartTime > 0) {
+                  const lapTime = (currentTime - car.currentLapStartTime) / 1000;
+                  car.lapTimes.push(lapTime);
+                  car.totalRaceTime += lapTime;
+                  
+                  // Additional tracking for player car
+                  if (car === player) {
+                    currentLapTime = lapTime;
+                    lapTimes.push(currentLapTime);
+                    
+                    if (currentLapTime < bestLapTime) {
+                      bestLapTime = currentLapTime;
+                    }
+                    
+                    // Update player's lap start time
+                    lapStartTime = currentTime;
+                  }
                 }
                 
-                // Start timing for next lap
-                lapStartTime = currentTime;
+                // Start timing for next lap for all cars
+                car.currentLapStartTime = currentTime;
               }
               
               // Reset for next lap
@@ -4346,6 +4368,17 @@
             } else if (car.lapsCompleted === 0) {
               // First time hitting start/finish - start first lap
               car.lapsCompleted = 1;
+              
+              // Initialize lap timing for all cars
+              if (gameRunning) {
+                const currentTime = Date.now();
+                car.currentLapStartTime = currentTime;
+                
+                // Additional tracking for player car
+                if (car === player) {
+                  lapStartTime = currentTime;
+                }
+              }
               car.currentCheckpoint = 1;
               car.checkpointsHit = [true, false, false];
               
@@ -4523,87 +4556,33 @@
       }
 
       function calculateGapInSeconds(leader, currentCar, position) {
-        // If cars are on different laps, use lap-based calculation
-        if (leader.lapsCompleted !== currentCar.lapsCompleted) {
-          return calculateCrossLapGap(leader, currentCar, position);
+        // Calculate gap based solely on real lap time data
+        
+        // If leader and car have identical timing data, this must be the leader
+        if (leader === currentCar) {
+          return 0;
         }
         
-        // If on same lap, try checkpoint timing first
-        const checkpointGap = calculateSameLapGap(leader, currentCar);
-        if (checkpointGap !== null && checkpointGap > 0) {
-          return checkpointGap;
+        // Get total race time for both cars (completed laps + current lap progress)
+        let leaderTime = leader.totalRaceTime;
+        let currentCarTime = currentCar.totalRaceTime;
+        
+        // Add current lap progress time for both cars
+        const currentTime = Date.now();
+        
+        if (leader.currentLapStartTime > 0) {
+          leaderTime += (currentTime - leader.currentLapStartTime) / 1000;
         }
         
-        // Fallback to progress-based estimate for same-lap cars
-        return calculateProgressBasedGap(leader, currentCar, position);
-      }
-
-      function calculateSameLapGap(leader, currentCar) {
-        // Try to find timing data from recent checkpoints
-        let bestGap = null;
-        
-        // Check last few checkpoints for timing data, starting with most recent
-        const maxCheckpoints = Math.min(3, Math.max(leader.currentCheckpoint, currentCar.currentCheckpoint));
-        
-        for (let i = 0; i < maxCheckpoints; i++) {
-          const checkpointIndex = Math.max(0, Math.min(leader.currentCheckpoint, currentCar.currentCheckpoint) - 1 - i);
-          const checkpointKey = `${currentCar.lapsCompleted}_${checkpointIndex}`;
-          
-          const leaderTime = leader.checkpointTimes[checkpointKey];
-          const carTime = currentCar.checkpointTimes[checkpointKey];
-
-          if (leaderTime && carTime && carTime >= leaderTime) {
-            const gap = (carTime - leaderTime) / 1000;
-            // Use the most recent valid timing data
-            if (bestGap === null || i === 0) {
-              bestGap = gap;
-              break; // Prefer most recent checkpoint timing
-            }
-          }
-        }
-
-        return bestGap;
-      }
-
-      function calculateCrossLapGap(leader, currentCar, position) {
-        const lapDifference = leader.lapsCompleted - currentCar.lapsCompleted;
-        
-        if (lapDifference === 0) {
-          return calculateSameLapGap(leader, currentCar) || calculateProgressBasedGap(leader, currentCar, position);
+        if (currentCar.currentLapStartTime > 0) {
+          currentCarTime += (currentTime - currentCar.currentLapStartTime) / 1000;
         }
         
-        // Base calculation: use progress difference for more accuracy
-        const progressDiff = leader.raceProgress - currentCar.raceProgress;
-        let baseGap = progressDiff * 75; // ~75 seconds per full lap progress
+        // Calculate gap based on difference in total race times
+        const gap = currentCarTime - leaderTime;
         
-        // Ensure minimum realistic gaps based on lap difference
-        const minGapPerLap = 60; // 1 minute minimum per lap behind
-        const minGap = lapDifference * minGapPerLap;
-        
-        // For cars multiple laps behind, add additional realistic time
-        if (lapDifference >= 2) {
-          baseGap += (lapDifference - 1) * 30; // Extra 30 seconds per additional lap
-        }
-
-        return Math.max(baseGap, minGap);
-      }
-      
-      function calculateProgressBasedGap(leader, currentCar, position) {
-        // Use race progress difference to estimate time gap
-        const progressDiff = leader.raceProgress - currentCar.raceProgress;
-        
-        if (progressDiff > 0.01) {
-          // Convert progress difference to time (realistic lap time ~75-85 seconds)
-          const progressBasedGap = progressDiff * 80;
-          // Add small variance to prevent identical gaps
-          const variance = (Math.sin(currentCar.x * 0.001 + currentCar.y * 0.001) * 0.5) + 0.5; // 0-1
-          return Math.max(progressBasedGap + variance, position * 1.2);
-        }
-        
-        // Very close cars: base on position with small realistic increments
-        const baseGap = position * 1.5;
-        const variance = (currentCar.x + currentCar.y) % 100 / 100; // deterministic variance 0-1
-        return baseGap + variance;
+        // Return the calculated gap, ensuring it's positive
+        return Math.max(gap, 0.1);
       }
 
       function formatGapText(gapInSeconds) {
@@ -6047,10 +6026,17 @@
 
       // Show race complete screen
       function showRaceComplete() {
-        const elapsed = (Date.now() - raceStartTime) / 1000;
-        currentRaceTime = elapsed; // Store for leaderboard
-        const minutes = Math.floor(elapsed / 60);
-        const seconds = (elapsed % 60).toFixed(3);
+        // Calculate final race time from player's total lap times
+        let finalRaceTime = player.totalRaceTime;
+        // Add final lap time if it was in progress
+        if (player.currentLapStartTime > 0) {
+          const finalLapTime = (Date.now() - player.currentLapStartTime) / 1000;
+          finalRaceTime += finalLapTime;
+        }
+        
+        currentRaceTime = finalRaceTime; // Store for leaderboard
+        const minutes = Math.floor(finalRaceTime / 60);
+        const seconds = (finalRaceTime % 60).toFixed(3);
 
         document.getElementById("finalPos").textContent = `${
           player.racePosition
@@ -6215,6 +6201,18 @@
         currentLapTime = 0;
         bestLapTime = Number.MAX_VALUE;
         lapTimes = [];
+        
+        // Reset lap timing for player
+        player.lapTimes = [];
+        player.currentLapStartTime = 0;
+        player.totalRaceTime = 0;
+        
+        // Reset lap timing for all AI cars
+        aiCars.forEach(car => {
+          car.lapTimes = [];
+          car.currentLapStartTime = 0;
+          car.totalRaceTime = 0;
+        });
 
         // Reset UI elements
         document.getElementById("newRecordText").style.color =
