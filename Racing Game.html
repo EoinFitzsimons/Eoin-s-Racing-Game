@@ -4468,9 +4468,9 @@
           // Wide finish line area spans the track width to catch cars using inside/outside lines
           const finishY = nextCheckpoint.y;
           const finishCenterX = nextCheckpoint.x;
-          // Extra-wide finish line detection area to ensure reliable checkpoint detection
-          const finishWidth = 350; // Further increased width
-          const finishHeight = 150; // Further increased height
+          // Reduced finish line detection area to prevent wide cutting
+          const finishWidth = 280; // Reduced from 350
+          const finishHeight = 120; // Reduced from 150
 
           // Check if car is within the finish line area
           if (
@@ -4482,18 +4482,24 @@
             checkpointHit = true;
           }
         } else {
-          // Regular circular checkpoint detection for other checkpoints
+          // Regular circular checkpoint detection for other checkpoints - smaller detection area
           const dx = nextCheckpoint.x - car.x;
           const dy = nextCheckpoint.y - car.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 60) {
+          if (distance < 45) { // Reduced from 60 to make checkpoints more restrictive
             checkpointHit = true;
           }
         }
 
-        // Process checkpoint hit
+        // Process checkpoint hit - but only if car is properly on track
         if (checkpointHit) {
+          // Additional validation: car must be on track to hit checkpoint
+          if (!isPointOnTrack(car.x, car.y)) {
+            // Car is off track, don't count the checkpoint
+            return;
+          }
+          
           // Record checkpoint time for gap calculations
           const currentTime = gameRunning ? Date.now() : 0;
           if (!car.checkpointTimes) {
@@ -4904,30 +4910,12 @@
         if (car.isPlayer) div.className += " player-pos";
 
         const position = index + 1;
-        const positionText = `P${position}`;
-
-        // Shorten car name to first two words if it's too long
-        let carName = car.name || "Player";
-        const words = carName.split(" ");
-        if (words.length > 2) {
-          carName = words.slice(0, 2).join(" ");
-        }
-
-        // Get sector and lap info that doesn't reset after race completion
-        const lapDisplay = raceComplete ? 
-          `Lap ${car.lapsCompleted}/${totalLaps}` : 
-          `Lap ${car.lapsCompleted}/${totalLaps}`;
-          
-        // Get current sector
-        let sector = "S1";
-        if (car.currentCheckpoint >= Math.floor(track.checkpoints.length * 0.6)) {
-          sector = "S/F"; // Final sector approaching finish line
-        } else if (car.currentCheckpoint >= Math.floor(track.checkpoints.length * 0.3)) {
-          sector = "S2"; // Middle sector
-        }
+        
+        // Get 3-letter team abbreviation
+        const teamCode = getTeamCode(car);
         
         // Format last lap time
-        let lastLapDisplay = "--:--";
+        let lastLapDisplay = "--.---";
         if (car.lapTimes && car.lapTimes.length > 0) {
           const lastLapTime = car.lapTimes[car.lapTimes.length - 1];
           const lastLapMinutes = Math.floor(lastLapTime / 60);
@@ -4935,18 +4923,21 @@
           lastLapDisplay = `${lastLapMinutes}:${lastLapSeconds.padStart(6, "0")}`;
         }
 
+        // Get gap text (already formatted)
         const gapText = calculateGapText(car, index, allCars);
+        
+        // Current lap info
+        const lapInfo = `${car.lapsCompleted}/${totalLaps}`;
+        
         const carNameColor = car.isPlayer ? "var(--primary-color)" : "#ffffff";
 
-        // Include raw time for debugging
-        const rawTime = car.calculatedTotalTime ? car.calculatedTotalTime.toFixed(6) : "0.000000";
-
+        // Format: position  3-letter-abbreviation  lap-progress  last-lap-time  gap-to-leader
         div.innerHTML = `
-          <span style="color: #cccccc; font-weight: 600; width: 25px; display: inline-block;">${positionText}</span>
-          <span style="color: ${carNameColor}; font-weight: ${
-          car.isPlayer ? "700" : "400"
-        }; flex: 1; max-width: 100px;">${carName}</span>
-          <span style="color: #aaaaaa; font-size: 0.8rem;">${lapDisplay} | ${sector} | Last: ${lastLapDisplay} | ${gapText} | Raw: ${rawTime}s</span>
+          <span style="color: #cccccc; font-weight: 600; width: 30px; display: inline-block;">${position}</span>
+          <span style="color: ${carNameColor}; font-weight: ${car.isPlayer ? "700" : "400"}; width: 50px; display: inline-block;">${teamCode}</span>
+          <span style="color: #fff; width: 40px; display: inline-block;">${lapInfo}</span>
+          <span style="color: #fff; width: 80px; display: inline-block;">${lastLapDisplay}</span>
+          <span style="color: #888; width: 80px; display: inline-block;">${gapText}</span>
         `;
 
         return div;
@@ -4954,7 +4945,7 @@
 
       function calculateGapText(car, index, allCars) {
         if (index === 0) {
-          return "LEADER";
+          return "+0.000s";
         }
 
         const leader = allCars[0];
@@ -5041,17 +5032,17 @@
 
       function formatGapText(gapInSeconds) {
         if (gapInSeconds === null || gapInSeconds < 0) {
-          return "+0.0s";
+          return "+0.000s";
         }
 
         // Display the exact gap including true zeros (like in real F1)
         if (gapInSeconds < 60) {
-          return `+${gapInSeconds.toFixed(1)}s`;
+          return `+${gapInSeconds.toFixed(3)}s`;
         }
 
         const minutes = Math.floor(gapInSeconds / 60);
-        const seconds = (gapInSeconds % 60).toFixed(1);
-        return `+${minutes}:${seconds.padStart(4, "0")}`;
+        const seconds = (gapInSeconds % 60).toFixed(3);
+        return `+${minutes}:${seconds.padStart(6, "0")}`;
       }
 
       // Track collision detection for larger track
@@ -5129,8 +5120,8 @@
           }
         }
 
-        // Balanced track width allowance - not too restrictive, not too permissive
-        const trackRadius = track.width / 2 + 12; // Track boundary detection radius
+        // Much more restrictive track boundaries to prevent checkpoint skipping
+        const trackRadius = track.width / 2 - 5; // Tighter track boundary detection radius
         return minDistance <= trackRadius;
       }
 
@@ -5193,18 +5184,19 @@
       // Helper function to apply surface-specific effects
       function applySurfaceEffects(car, surfaceInfo) {
         if (surfaceInfo.surface === "grass") {
-          car.velocity.x *= 0.75;
-          car.velocity.y *= 0.75;
+          // Much harsher penalty for going off track
+          car.velocity.x *= 0.5; // Reduced from 0.75
+          car.velocity.y *= 0.5;
 
-          if (Math.random() < 0.3) {
+          if (Math.random() < 0.5) { // More frequent effects
             addSparkle(
               car.x + (Math.random() - 0.5) * 20,
               car.y + (Math.random() - 0.5) * 20
             );
           }
         } else if (surfaceInfo.surface === "kerb") {
-          car.velocity.x *= 0.92;
-          car.velocity.y *= 0.92;
+          car.velocity.x *= 0.85; // Slightly harsher kerb penalty
+          car.velocity.y *= 0.85;
         }
       }
 
@@ -5264,12 +5256,12 @@
         const normalY = outwardY / outwardLength;
 
         // Position car just inside track boundary with safety margin
-        const safeDistance = track.width / 2 + 8;
+        const safeDistance = track.width / 2 - 10; // More restrictive positioning
         const targetX = closestPoint.x + normalX * safeDistance;
         const targetY = closestPoint.y + normalY * safeDistance;
 
-        // Apply gradual correction to prevent jarring repositioning
-        const correctionStrength = 0.25;
+        // Apply immediate correction to prevent track cutting
+        const correctionStrength = 0.8; // Much more aggressive repositioning
         car.x = car.x + (targetX - car.x) * correctionStrength;
         car.y = car.y + (targetY - car.y) * correctionStrength;
 
@@ -5326,12 +5318,30 @@
             distanceFromCenter: 100,
           };
 
+          // Apply much harsher off-track penalties
           applySurfaceEffects(car, surfaceInfo);
+          
+          // Additional speed penalty for going off track
+          car.velocity.x *= 0.6; // More severe speed reduction
+          car.velocity.y *= 0.6;
 
           const { closestPoint, bestSegmentInfo } = findClosestTrackPoint(car);
 
           if (closestPoint && bestSegmentInfo) {
-            repositionCarOnTrack(car, closestPoint);
+            // If car is extremely far off track, teleport immediately
+            if (surfaceInfo.distanceFromCenter > track.width) {
+              // Immediate teleport for extreme cases
+              const normalX = (car.x - closestPoint.x) / surfaceInfo.distanceFromCenter;
+              const normalY = (car.y - closestPoint.y) / surfaceInfo.distanceFromCenter;
+              const safeDistance = track.width / 2 - 15;
+              
+              car.x = closestPoint.x + normalX * safeDistance;
+              car.y = closestPoint.y + normalY * safeDistance;
+              car.velocity.x *= 0.3; // Severe speed penalty for extreme off-track
+              car.velocity.y *= 0.3;
+            } else {
+              repositionCarOnTrack(car, closestPoint);
+            }
           }
         }
       }
@@ -6175,7 +6185,33 @@
 
       // Get team code/initials for displaying on cars
       function getTeamCode(car) {
-        // If car has a name property, extract code from it
+        // For player car, use the selected team
+        if (car === player || car.isPlayer) {
+          if (typeof selectedTeam === "string") {
+            const teamIdMap = {
+              emerald_isle: "EIR",
+              dragon_force: "DFM",
+              highland_racing: "HRT",
+              britannia_motors: "BRT",
+              tricolore_racing: "TCR",
+              kaiser_motorsport: "KMS",
+              iberian_speed: "IBS",
+              veloce_italia: "VIT",
+              adriatic_racing: "ADR",
+              liberty_racing: "LBR",
+              rising_sun: "RSM",
+              celestial_motors: "CEL",
+              maharaja_motors: "MHJ",
+              samba_racing: "SRT",
+              velocidad_venezuela: "VEV",
+              regina_curse: "RGC",
+            };
+            return teamIdMap[selectedTeam] || "PLR";
+          }
+          return "PLR";
+        }
+
+        // If AI car has a name property, extract code from it
         if (car.name) {
           // Map team names to their 3-letter codes
           const teamCodeMap = {
@@ -6190,42 +6226,18 @@
             "Adriatic Racing": "ADR",
             "Liberty Racing": "LBR",
             "Rising Sun Motors": "RSM",
-            "Dragon Speed Racing": "DSR",
+            "Celestial Motors": "CEL",
             "Maharaja Motors": "MHJ",
             "Samba Racing Team": "SRT",
-            "Pura Vida Racing": "PVR",
-            "Horn Velocity": "HVR",
+            "Velocidad Venezuela": "VEV",
+            "Regina Curse": "RGC",
           };
 
-          return teamCodeMap[car.name] || "UNK";
+          return teamCodeMap[car.name] || "AI";
         }
 
-        // If car has teamAttributes, try to extract from selectedTeam
-        if (car.teamAttributes && typeof selectedTeam === "string") {
-          const teamIdMap = {
-            emerald_isle: "EIR",
-            dragon_force: "DFM",
-            highland_racing: "HRT",
-            britannia_motors: "BRT",
-            tricolore_racing: "TCR",
-            kaiser_motorsport: "KMS",
-            iberian_speed: "IBS",
-            veloce_italia: "VIT",
-            adriatic_racing: "ADR",
-            liberty_racing: "LBR",
-            rising_sun: "RSM",
-            dragon_speed: "DSR",
-            maharaja_motors: "MHJ",
-            samba_racing: "SRT",
-            pura_vida: "PVR",
-            horn_velocity: "HVR",
-          };
-
-          return teamIdMap[selectedTeam] || "PLR";
-        }
-
-        // Default for player or unknown cars
-        return car === player ? "PLR" : "AI";
+        // Default for unknown cars
+        return "AI";
       }
 
       // Draw tire marks
