@@ -4482,13 +4482,67 @@
             checkpointHit = true;
           }
         } else {
-          // Regular circular checkpoint detection for other checkpoints - smaller detection area
-          const dx = nextCheckpoint.x - car.x;
-          const dy = nextCheckpoint.y - car.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+          // Rectangular checkpoint detection spanning full track width
+          // Find nearby waypoints to calculate gate direction
+          let closestWaypointIndex = 0;
+          let minDistance = Infinity;
 
-          if (distance < 45) { // Reduced from 60 to make checkpoints more restrictive
-            checkpointHit = true;
+          track.waypoints.forEach((waypoint, wpIndex) => {
+            const distance = Math.sqrt(
+              (waypoint.x - nextCheckpoint.x) * (waypoint.x - nextCheckpoint.x) +
+                (waypoint.y - nextCheckpoint.y) * (waypoint.y - nextCheckpoint.y)
+            );
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestWaypointIndex = wpIndex;
+            }
+          });
+
+          // Calculate gate direction perpendicular to track
+          const prevPoint =
+            track.waypoints[
+              closestWaypointIndex > 0
+                ? closestWaypointIndex - 1
+                : track.waypoints.length - 1
+            ];
+          const nextPoint =
+            track.waypoints[
+              (closestWaypointIndex + 1) % track.waypoints.length
+            ];
+
+          const dx = nextPoint.x - prevPoint.x;
+          const dy = nextPoint.y - prevPoint.y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+
+          if (length > 0) {
+            // Perpendicular vector for gate orientation
+            const perpX = -dy / length;
+            const perpY = dx / length;
+
+            // Gate spans the full width of the track to prevent going around
+            const gateWidth = track.width; // Full track width
+            const gateThickness = 30; // Thickness of detection area along track direction
+            
+            // Calculate the four corners of the rectangular detection area
+            const halfWidth = gateWidth / 2;
+            const halfThickness = gateThickness / 2;
+            
+            // Center of the gate
+            const centerX = nextCheckpoint.x;
+            const centerY = nextCheckpoint.y;
+            
+            // Calculate gate corners using perpendicular (width) and parallel (thickness) vectors
+            const parallelX = dx / length;
+            const parallelY = dy / length;
+            
+            // Transform car position to gate-local coordinates
+            const carLocalX = (car.x - centerX) * perpX + (car.y - centerY) * perpY;
+            const carLocalY = (car.x - centerX) * parallelX + (car.y - centerY) * parallelY;
+            
+            // Check if car is within the rectangular gate area
+            if (Math.abs(carLocalX) <= halfWidth && Math.abs(carLocalY) <= halfThickness) {
+              checkpointHit = true;
+            }
           }
         }
 
@@ -5344,6 +5398,1025 @@
             }
           }
         }
+      }
+
+      /**
+       * REALISTIC SCENERY RENDERING SYSTEM
+       * Creates realistic F1 circuit environment using image textures and proper top-down perspective.
+       * All scenery is positioned relative to track coordinates for consistency.
+       * 
+       * Features:
+       * - Real image textures for trees, grass, buildings
+       * - Top-down perspective matching actual aerial views
+       * - Static positioning based on track geometry
+       * - Professional F1 circuit layout
+       */
+      
+      // Static scenery data and image cache
+      let sceneryData = null;
+      let sceneryImages = {};
+      
+      function initializeScenery() {
+        if (sceneryData) return; // Already initialized
+        
+        // Load scenery images from free online sources
+        loadSceneryImages();
+        
+        // Get track bounds for scenery placement
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        track.waypoints.forEach(point => {
+          minX = Math.min(minX, point.x);
+          maxX = Math.max(maxX, point.x);
+          minY = Math.min(minY, point.y);
+          maxY = Math.max(maxY, point.y);
+        });
+        
+        const trackCenterX = (minX + maxX) / 2;
+        const trackCenterY = (minY + maxY) / 2;
+        const trackBuffer = 200;
+        
+        // Generate realistic static scenery positions based on track layout
+        sceneryData = {
+          // Trees positioned in realistic clusters around track perimeter
+          treeGroups: [
+            // Forest area behind paddock
+            { x: minX - trackBuffer - 150, y: trackCenterY, width: 300, height: 400, density: 0.7 },
+            // Trees along main straight
+            { x: maxX + trackBuffer + 100, y: trackCenterY, width: 200, height: 500, density: 0.6 },
+            // Corner vegetation
+            { x: trackCenterX + 200, y: minY - 100, width: 150, height: 150, density: 0.5 },
+            { x: trackCenterX - 200, y: maxY + 100, width: 150, height: 150, density: 0.5 },
+          ],
+          
+          // Buildings positioned like real F1 circuits
+          buildings: [
+            // Main paddock complex
+            { x: minX - trackBuffer - 100, y: trackCenterY - 100, width: 200, height: 300, type: 'paddock' },
+            // Race control tower
+            { x: 1000, y: 1200, width: 40, height: 40, type: 'tower' },
+            // Team hospitality units
+            { x: minX - trackBuffer - 250, y: trackCenterY - 150, width: 80, height: 200, type: 'hospitality' },
+            { x: minX - trackBuffer - 250, y: trackCenterY + 50, width: 80, height: 200, type: 'hospitality' },
+          ],
+          
+          // Grandstands positioned for optimal viewing
+          grandstands: [
+            { x: maxX + trackBuffer + 50, y: trackCenterY, width: 150, height: 300, type: 'main' },
+            { x: 1100, y: 1100, width: 100, height: 80, type: 'start_finish' },
+          ],
+          
+          trackBounds: { minX, maxX, minY, maxY, trackCenterX, trackCenterY, trackBuffer }
+        };
+      }
+      
+      function loadSceneryImages() {
+        // Use free online images for realistic textures
+        const imageUrls = {
+          tree: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiMyZTdjNDAiLz4KPHJlY3QgeD0iMTQiIHk9IjIwIiB3aWR0aD0iNCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzY1NDMyMSIvPgo8L3N2Zz4K',
+          grass: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjNGM3YzU0Ii8+CjxwYXRoIGQ9Ik0wIDAgTDY0IDY0IE0wIDY0IEw2NCAwIiBzdHJva2U9IiM2ZGE0NzEiIHN0cm9rZS13aWR0aD0iMC41Ii8+Cjwvc3ZnPgo=',
+          building: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZThlOGU4IiBzdHJva2U9IiM5OTk5OTkiIHN0cm9rZS13aWR0aD0iMiIvPgo8cmVjdCB4PSI4IiB5PSI4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiM4N2NlZWIiIHN0cm9rZT0iIzMzMzMzMyIvPgo8cmVjdCB4PSIyNCIgeT0iOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjODdjZWViIiBzdHJva2U9IiMzMzMzMzMiLz4KPHJlY3QgeD0iNDAiIHk9IjgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzg3Y2VlYiIgc3Ryb2tlPSIjMzMzMzMzIi8+CjxyZWN0IHg9IjgiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiM4N2NlZWIiIHN0cm9rZT0iIzMzMzMzMyIvPgo8cmVjdCB4PSIyNCIgeT0iMjQiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzg3Y2VlYiIgc3Ryb2tlPSIjMzMzMzMzIi8+CjxyZWN0IHg9IjQwIiB5PSIyNCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjODdjZWViIiBzdHJva2U9IiMzMzMzMzMiLz4KPHJlY3QgeD0iOCIgeT0iNDAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzg3Y2VlYiIgc3Ryb2tlPSIjMzMzMzMzIi8+CjxyZWN0IHg9IjI0IiB5PSI0MCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjODdjZWViIiBzdHJva2U9IiMzMzMzMzMiLz4KPHJlY3QgeD0iNDAiIHk9IjQwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIGZpbGw9IiM4N2NlZWIiIHN0cm9rZT0iIzMzMzMzMyIvPgo8L3N2Zz4K'
+        };
+        
+        // Create image objects
+        Object.keys(imageUrls).forEach(key => {
+          const img = new Image();
+          img.src = imageUrls[key];
+          sceneryImages[key] = img;
+        });
+      }
+      
+      function createScenery() {
+        initializeScenery();
+        const bounds = sceneryData.trackBounds;
+        
+        // Draw background grass texture first
+        drawGrassBackground(bounds);
+        
+        // Draw all scenery elements in proper top-down perspective
+        drawRealisticBuildings(bounds);
+        drawRealisticTrees(bounds);
+        drawGrandstandsTopDown(bounds);
+        drawParkingAreasTopDown(bounds);
+      }
+      
+      function drawGrassBackground(bounds) {
+        // Create a realistic grass texture background around the track
+        const grassImg = sceneryImages.grass;
+        if (!grassImg || !grassImg.complete) {
+          // Fallback to simple grass pattern
+          ctx.fillStyle = "#4c7c54";
+          ctx.fillRect(bounds.minX - 500, bounds.minY - 500, 
+                      (bounds.maxX - bounds.minX) + 1000, 
+                      (bounds.maxY - bounds.minY) + 1000);
+          return;
+        }
+        
+        // Tile the grass texture
+        const tileSize = 64;
+        for (let x = bounds.minX - 500; x < bounds.maxX + 500; x += tileSize) {
+          for (let y = bounds.minY - 500; y < bounds.maxY + 500; y += tileSize) {
+            ctx.drawImage(grassImg, x, y, tileSize, tileSize);
+          }
+        }
+      }
+      
+      function drawRealisticBuildings(bounds) {
+        sceneryData.buildings.forEach(building => {
+          drawBuildingTopDown(building);
+        });
+      }
+      
+      function drawBuildingTopDown(building) {
+        const buildingImg = sceneryImages.building;
+        
+        // Draw building shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.fillRect(building.x + 5, building.y + 5, building.width, building.height);
+        
+        if (buildingImg && buildingImg.complete) {
+          // Use texture if available
+          ctx.drawImage(buildingImg, building.x, building.y, building.width, building.height);
+        } else {
+          // Fallback to simple top-down building view
+          ctx.fillStyle = "#e8e8e8";
+          ctx.fillRect(building.x, building.y, building.width, building.height);
+          
+          // Add building details based on type
+          if (building.type === 'paddock') {
+            drawPaddockTopDown(building);
+          } else if (building.type === 'tower') {
+            drawTowerTopDown(building);
+          } else if (building.type === 'hospitality') {
+            drawHospitalityTopDown(building);
+          }
+        }
+        
+        // Building outline
+        ctx.strokeStyle = "#999999";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(building.x, building.y, building.width, building.height);
+      }
+      
+      function drawPaddockTopDown(building) {
+        // Paddock garage doors from above
+        const doorWidth = building.width / 8;
+        for (let i = 0; i < 8; i++) {
+          const doorX = building.x + i * doorWidth;
+          const doorY = building.y;
+          
+          // Team colors for garage doors
+          const teamColors = ["#ff0000", "#0000ff", "#00ff00", "#ffff00", "#ff00ff", "#00ffff", "#ffa500", "#800080"];
+          ctx.fillStyle = teamColors[i % teamColors.length];
+          ctx.fillRect(doorX + 2, doorY + 2, doorWidth - 4, 30);
+          
+          // Door frame
+          ctx.strokeStyle = "#333333";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(doorX + 2, doorY + 2, doorWidth - 4, 30);
+        }
+        
+        // Main building interior
+        ctx.fillStyle = "#f0f0f0";
+        ctx.fillRect(building.x + 10, building.y + 40, building.width - 20, building.height - 50);
+        
+        // Work bays
+        for (let i = 0; i < 8; i++) {
+          const bayX = building.x + 10 + i * ((building.width - 20) / 8);
+          ctx.fillStyle = "#d0d0d0";
+          ctx.fillRect(bayX + 1, building.y + 40, (building.width - 20) / 8 - 2, building.height - 50);
+        }
+      }
+      
+      function drawTowerTopDown(building) {
+        // Race control tower from above - circular/octagonal shape
+        ctx.fillStyle = "#c0c0c0";
+        ctx.beginPath();
+        ctx.arc(building.x + building.width/2, building.y + building.height/2, building.width/2, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Tower center
+        ctx.fillStyle = "#999999";
+        ctx.beginPath();
+        ctx.arc(building.x + building.width/2, building.y + building.height/2, building.width/4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Add "RC" text
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("RC", building.x + building.width/2, building.y + building.height/2 + 4);
+      }
+      
+      function drawHospitalityTopDown(building) {
+        // Hospitality unit with outdoor seating area
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(building.x, building.y, building.width, building.height * 0.6);
+        
+        // Outdoor terrace
+        ctx.fillStyle = "#8b4513";
+        ctx.fillRect(building.x, building.y + building.height * 0.6, building.width, building.height * 0.4);
+        
+        // Tables and seating (small dots)
+        ctx.fillStyle = "#654321";
+        for (let i = 0; i < 6; i++) {
+          const tableX = building.x + 10 + (i % 2) * (building.width - 20);
+          const tableY = building.y + building.height * 0.65 + Math.floor(i / 2) * 15;
+          ctx.beginPath();
+          ctx.arc(tableX, tableY, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+      
+      function drawRealisticTrees(bounds) {
+        sceneryData.treeGroups.forEach(group => {
+          drawTreeGroup(group);
+        });
+      }
+      
+      function drawTreeGroup(group) {
+        const treeImg = sceneryImages.tree;
+        const treeSize = 16;
+        const numTrees = Math.floor(group.width * group.height * group.density / 500);
+        
+        for (let i = 0; i < numTrees; i++) {
+          const x = group.x + Math.random() * group.width;
+          const y = group.y + Math.random() * group.height;
+          
+          if (treeImg && treeImg.complete) {
+            // Use tree image
+            ctx.drawImage(treeImg, x - treeSize/2, y - treeSize/2, treeSize, treeSize);
+          } else {
+            // Fallback to simple top-down tree
+            drawSimpleTreeTopDown(x, y, treeSize);
+          }
+        }
+      }
+      
+      function drawSimpleTreeTopDown(x, y, size) {
+        // Tree shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        ctx.beginPath();
+        ctx.arc(x + 2, y + 2, size/2, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Tree canopy from above
+        ctx.fillStyle = "#2e7c40";
+        ctx.beginPath();
+        ctx.arc(x, y, size/2, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Tree center/trunk visible from above
+        ctx.fillStyle = "#1a4f26";
+        ctx.beginPath();
+        ctx.arc(x, y, size/6, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      
+      function drawGrandstandsTopDown(bounds) {
+        sceneryData.grandstands.forEach(grandstand => {
+          // Grandstand from above - tiered seating
+          ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+          ctx.fillRect(grandstand.x + 4, grandstand.y + 4, grandstand.width, grandstand.height);
+          
+          // Main structure
+          ctx.fillStyle = "#e0e0e0";
+          ctx.fillRect(grandstand.x, grandstand.y, grandstand.width, grandstand.height);
+          
+          // Seating tiers (horizontal lines)
+          ctx.strokeStyle = "#999999";
+          ctx.lineWidth = 1;
+          for (let i = 1; i < 8; i++) {
+            const tierY = grandstand.y + (grandstand.height / 8) * i;
+            ctx.beginPath();
+            ctx.moveTo(grandstand.x, tierY);
+            ctx.lineTo(grandstand.x + grandstand.width, tierY);
+            ctx.stroke();
+          }
+          
+          // Stairs/aisles (vertical lines)
+          for (let i = 1; i < 4; i++) {
+            const aisleX = grandstand.x + (grandstand.width / 4) * i;
+            ctx.beginPath();
+            ctx.moveTo(aisleX, grandstand.y);
+            ctx.lineTo(aisleX, grandstand.y + grandstand.height);
+            ctx.stroke();
+          }
+          
+          // Outline
+          ctx.strokeStyle = "#666666";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(grandstand.x, grandstand.y, grandstand.width, grandstand.height);
+        });
+      }
+      
+      function drawParkingAreasTopDown(bounds) {
+        // Main parking lot
+        const parkingX = bounds.minX - bounds.trackBuffer - 400;
+        const parkingY = bounds.trackCenterY - 150;
+        const parkingWidth = 200;
+        const parkingHeight = 300;
+        
+        // Parking surface
+        ctx.fillStyle = "#505050";
+        ctx.fillRect(parkingX, parkingY, parkingWidth, parkingHeight);
+        
+        // Parking space lines
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        
+        const spaceWidth = 20;
+        const spaceHeight = 12;
+        
+        for (let row = 0; row < Math.floor(parkingHeight / spaceHeight); row++) {
+          for (let col = 0; col < Math.floor(parkingWidth / spaceWidth); col++) {
+            const spaceX = parkingX + col * spaceWidth;
+            const spaceY = parkingY + row * spaceHeight;
+            
+            ctx.strokeRect(spaceX, spaceY, spaceWidth, spaceHeight);
+            
+            // Some spaces have cars (small rectangles)
+            if (Math.random() > 0.3) {
+              const carColors = ["#ff0000", "#0000ff", "#ffffff", "#000000", "#c0c0c0"];
+              ctx.fillStyle = carColors[Math.floor(Math.random() * carColors.length)];
+              ctx.fillRect(spaceX + 2, spaceY + 2, spaceWidth - 4, spaceHeight - 4);
+            }
+          }
+        }
+        
+        // Parking lot outline
+        ctx.strokeStyle = "#333333";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(parkingX, parkingY, parkingWidth, parkingHeight);
+      }
+      
+      // Reset scenery data for new race
+      function resetSceneryData() {
+        sceneryData = null;
+        // Keep images cached, just reset positioning data
+      }
+      
+      function drawPaddockBuildings(centerX, centerY, minX, maxX, minY, maxY, buffer) {
+        // Main paddock complex - much closer to track
+        const paddockX = minX - buffer - 200;
+        const paddockY = centerY - 150;
+        
+        // Main garage building - larger and more detailed
+        const garageWidth = 400;
+        const garageHeight = 140;
+        
+        // Building foundation
+        ctx.fillStyle = "#555555";
+        ctx.fillRect(paddockX - 5, paddockY + garageHeight, garageWidth + 10, 8);
+        
+        // Building shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fillRect(paddockX + 6, paddockY + 6, garageWidth, garageHeight);
+        
+        // Main building structure with better gradient
+        const buildingGradient = ctx.createLinearGradient(paddockX, paddockY, paddockX, paddockY + garageHeight);
+        buildingGradient.addColorStop(0, "#f5f5f5");
+        buildingGradient.addColorStop(0.2, "#e8e8e8");
+        buildingGradient.addColorStop(0.8, "#d0d0d0");
+        buildingGradient.addColorStop(1, "#b0b0b0");
+        
+        ctx.fillStyle = buildingGradient;
+        ctx.fillRect(paddockX, paddockY, garageWidth, garageHeight);
+        
+        // Building outline
+        ctx.strokeStyle = "#888888";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(paddockX, paddockY, garageWidth, garageHeight);
+        
+        // Building trim - multiple colored stripes
+        ctx.fillStyle = "#4a90e2";
+        ctx.fillRect(paddockX, paddockY, garageWidth, 12);
+        ctx.fillStyle = "#2c5aa0";
+        ctx.fillRect(paddockX, paddockY + garageHeight - 12, garageWidth, 12);
+        ctx.fillStyle = "#ff6b35";
+        ctx.fillRect(paddockX, paddockY + 12, garageWidth, 4);
+        
+        // Garage doors with more detail
+        for (let i = 0; i < 7; i++) {
+          const doorX = paddockX + 15 + i * 55;
+          const doorY = paddockY + 25;
+          const doorWidth = 50;
+          const doorHeight = 90;
+          
+          // Door frame
+          ctx.fillStyle = "#333333";
+          ctx.fillRect(doorX - 3, doorY - 3, doorWidth + 6, doorHeight + 6);
+          
+          // Door with team colors
+          const teamColors = ["#ff0000", "#0000ff", "#00ff00", "#ffff00", "#ff00ff", "#00ffff", "#ffa500"];
+          ctx.fillStyle = teamColors[i];
+          ctx.fillRect(doorX, doorY, doorWidth, doorHeight);
+          
+          // Door panels
+          ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+          for (let panel = 0; panel < 4; panel++) {
+            const panelY = doorY + 5 + panel * 20;
+            ctx.fillRect(doorX + 3, panelY, doorWidth - 6, 2);
+          }
+          
+          // Door handle
+          ctx.fillStyle = "#silver";
+          ctx.fillRect(doorX + doorWidth - 12, doorY + doorHeight/2 - 3, 8, 6);
+          
+          // Window on door
+          ctx.fillStyle = "#87ceeb";
+          ctx.fillRect(doorX + 8, doorY + 15, doorWidth - 16, 25);
+          ctx.strokeStyle = "#333333";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(doorX + 8, doorY + 15, doorWidth - 16, 25);
+          
+          // Window cross pattern
+          ctx.beginPath();
+          ctx.moveTo(doorX + doorWidth/2, doorY + 15);
+          ctx.lineTo(doorX + doorWidth/2, doorY + 40);
+          ctx.moveTo(doorX + 8, doorY + 27.5);
+          ctx.lineTo(doorX + doorWidth - 8, doorY + 27.5);
+          ctx.stroke();
+          
+          // Team number
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 16px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText((i + 1).toString(), doorX + doorWidth/2, doorY + 70);
+        }
+        
+        // Rooftop details
+        ctx.fillStyle = "#666666";
+        ctx.fillRect(paddockX + 50, paddockY - 15, garageWidth - 100, 15);
+        
+        // Air conditioning units on roof
+        for (let i = 0; i < 3; i++) {
+          const acX = paddockX + 80 + i * 120;
+          ctx.fillStyle = "#888888";
+          ctx.fillRect(acX, paddockY - 12, 40, 12);
+          ctx.fillStyle = "#aaaaaa";
+          ctx.fillRect(acX + 5, paddockY - 10, 30, 8);
+        }
+        
+        // Team hospitality units - closer and more detailed
+        const hospUnits = [
+          { x: paddockX - 120, y: paddockY - 80, w: 100, h: 70, color: "#ff4444", name: "RED BULL" },
+          { x: paddockX - 120, y: paddockY + 80, w: 100, h: 70, color: "#44ff44", name: "MERCEDES" },
+          { x: paddockX + garageWidth + 20, y: paddockY - 40, w: 90, h: 65, color: "#4444ff", name: "FERRARI" },
+          { x: paddockX + garageWidth + 20, y: paddockY + 80, w: 90, h: 65, color: "#ffff44", name: "McLAREN" }
+        ];
+        
+        hospUnits.forEach(unit => {
+          // Unit shadow
+          ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+          ctx.fillRect(unit.x + 4, unit.y + 4, unit.w, unit.h);
+          
+          // Main unit
+          ctx.fillStyle = "#f8f8f8";
+          ctx.fillRect(unit.x, unit.y, unit.w, unit.h);
+          
+          // Colored stripe and logo area
+          ctx.fillStyle = unit.color;
+          ctx.fillRect(unit.x, unit.y, unit.w, 15);
+          
+          // Team name
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 8px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(unit.name, unit.x + unit.w/2, unit.y + 11);
+          
+          // Windows with reflections
+          for (let i = 0; i < 2; i++) {
+            const winX = unit.x + 10 + i * 35;
+            const winY = unit.y + 20;
+            ctx.fillStyle = "#87ceeb";
+            ctx.fillRect(winX, winY, 25, 20);
+            ctx.strokeStyle = "#666666";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(winX, winY, 25, 20);
+            
+            // Window reflection
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.fillRect(winX + 2, winY + 2, 10, 8);
+          }
+          
+          // Door
+          ctx.fillStyle = "#8b4513";
+          ctx.fillRect(unit.x + unit.w - 20, unit.y + 25, 15, 35);
+          ctx.fillStyle = "#brass";
+          ctx.fillRect(unit.x + unit.w - 8, unit.y + 40, 3, 3);
+        });
+        
+        // Race control tower - moved closer and more detailed
+        const towerX = paddockX + garageWidth/2 - 50;
+        const towerY = paddockY - 200;
+        const towerWidth = 100;
+        const towerHeight = 180;
+        
+        // Tower shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fillRect(towerX + 8, towerY + 8, towerWidth, towerHeight);
+        
+        // Tower structure with better gradient
+        const towerGradient = ctx.createLinearGradient(towerX, towerY, towerX + towerWidth, towerY);
+        towerGradient.addColorStop(0, "#e0e0e0");
+        towerGradient.addColorStop(0.5, "#f0f0f0");
+        towerGradient.addColorStop(1, "#d0d0d0");
+        
+        ctx.fillStyle = towerGradient;
+        ctx.fillRect(towerX, towerY, towerWidth, towerHeight);
+        
+        // Tower outline
+        ctx.strokeStyle = "#999999";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(towerX, towerY, towerWidth, towerHeight);
+        
+        // Tower windows with more detail
+        for (let floor = 0; floor < 6; floor++) {
+          for (let win = 0; win < 3; win++) {
+            const winX = towerX + 15 + win * 25;
+            const winY = towerY + 25 + floor * 25;
+            ctx.fillStyle = "#87ceeb";
+            ctx.fillRect(winX, winY, 18, 20);
+            ctx.strokeStyle = "#555555";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(winX, winY, 18, 20);
+            
+            // Window cross
+            ctx.beginPath();
+            ctx.moveTo(winX + 9, winY);
+            ctx.lineTo(winX + 9, winY + 20);
+            ctx.moveTo(winX, winY + 10);
+            ctx.lineTo(winX + 18, winY + 10);
+            ctx.stroke();
+            
+            // Window reflection
+            ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.fillRect(winX + 2, winY + 2, 6, 8);
+          }
+        }
+        
+        // Tower antenna
+        ctx.strokeStyle = "#666666";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(towerX + towerWidth/2, towerY - 20);
+        ctx.lineTo(towerX + towerWidth/2, towerY);
+        ctx.stroke();
+        
+        // Race control sign
+        ctx.fillStyle = "#ff0000";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("RACE CONTROL", towerX + towerWidth/2, towerY - 25);
+      }
+      
+      function drawVegetation(centerX, centerY, minX, maxX, minY, maxY, buffer) {
+        // Draw static trees from sceneryData to prevent flickering
+        if (sceneryData && sceneryData.trees) {
+          sceneryData.trees.forEach(tree => drawTree(tree.x, tree.y, tree.size, tree.type));
+        }
+        
+        // Hedge borders around paddock - closer to track
+        drawHedgeRow(minX - buffer - 250, centerY - 180, 300, true);
+        drawHedgeRow(minX - buffer - 30, centerY - 180, 150, false);
+        
+        // Flower beds near hospitality units - closer and more colorful
+        const flowerBeds = [
+          { x: minX - buffer - 140, y: centerY - 120, w: 30, h: 60 },
+          { x: minX - buffer - 140, y: centerY + 60, w: 30, h: 60 },
+          { x: minX - buffer - 40, y: centerY - 20, w: 40, h: 30 },
+          { x: 900, y: 1100, w: 35, h: 25 }, // Near start line
+          { x: 1100, y: 1100, w: 35, h: 25 }, // Near start line
+        ];
+        
+        flowerBeds.forEach(bed => {
+          // Soil base
+          ctx.fillStyle = "#8b4513";
+          ctx.fillRect(bed.x, bed.y, bed.w, bed.h);
+          
+          // Border
+          ctx.strokeStyle = "#654321";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bed.x, bed.y, bed.w, bed.h);
+          
+          // Flowers with more variety
+          for (let i = 0; i < 20; i++) {
+            const flowerX = bed.x + 3 + Math.random() * (bed.w - 6);
+            const flowerY = bed.y + 3 + Math.random() * (bed.h - 6);
+            const flowerColors = ["#ff69b4", "#ff0000", "#ffff00", "#9370db", "#ff6347", "#00ff00", "#ff8c00"];
+            const color = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(flowerX, flowerY, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Flower center
+            ctx.fillStyle = "#ffff00";
+            ctx.beginPath();
+            ctx.arc(flowerX, flowerY, 0.5, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        });
+      }
+      
+      function generateTreeCluster(centerX, centerY, count) {
+        const trees = [];
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = Math.random() * 80;
+          const x = centerX + Math.cos(angle) * distance;
+          const y = centerY + Math.sin(angle) * distance;
+          const size = 0.8 + Math.random() * 0.6;
+          const type = Math.floor(Math.random() * 3);
+          trees.push({ x, y, size, type });
+        }
+        return trees;
+      }
+      
+      function generateTreeLine(x1, y1, x2, y2, count) {
+        const trees = [];
+        for (let i = 0; i < count; i++) {
+          const t = i / (count - 1);
+          const x = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 40;
+          const y = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 40;
+          const size = 0.6 + Math.random() * 0.8;
+          const type = Math.floor(Math.random() * 3);
+          trees.push({ x, y, size, type });
+        }
+        return trees;
+      }
+      
+      function drawTree(x, y, size, type) {
+        // Tree shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        ctx.beginPath();
+        ctx.ellipse(x + 3, y + 15, 15 * size, 8 * size, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Tree trunk
+        const trunkWidth = 6 * size;
+        const trunkHeight = 25 * size;
+        ctx.fillStyle = "#8b4513";
+        ctx.fillRect(x - trunkWidth/2, y, trunkWidth, trunkHeight);
+        
+        // Tree foliage based on type
+        const foliageY = y - 15 * size;
+        const foliageRadius = 18 * size;
+        
+        if (type === 0) { // Oak tree
+          ctx.fillStyle = "#228b22";
+          ctx.beginPath();
+          ctx.arc(x, foliageY, foliageRadius, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Additional foliage clusters
+          ctx.beginPath();
+          ctx.arc(x - 8 * size, foliageY + 5 * size, foliageRadius * 0.7, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + 8 * size, foliageY + 5 * size, foliageRadius * 0.7, 0, 2 * Math.PI);
+          ctx.fill();
+        } else if (type === 1) { // Pine tree
+          ctx.fillStyle = "#006400";
+          ctx.beginPath();
+          ctx.moveTo(x, foliageY - foliageRadius);
+          ctx.lineTo(x - foliageRadius * 0.8, foliageY + foliageRadius * 0.5);
+          ctx.lineTo(x + foliageRadius * 0.8, foliageY + foliageRadius * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          
+          // Lower pine section
+          ctx.beginPath();
+          ctx.moveTo(x, foliageY);
+          ctx.lineTo(x - foliageRadius * 0.6, foliageY + foliageRadius);
+          ctx.lineTo(x + foliageRadius * 0.6, foliageY + foliageRadius);
+          ctx.closePath();
+          ctx.fill();
+        } else { // Maple tree
+          ctx.fillStyle = "#32cd32";
+          
+          // Multiple overlapping circles for fuller foliage
+          for (let i = 0; i < 5; i++) {
+            const offsetX = (Math.random() - 0.5) * 10 * size;
+            const offsetY = (Math.random() - 0.5) * 10 * size;
+            ctx.beginPath();
+            ctx.arc(x + offsetX, foliageY + offsetY, foliageRadius * 0.8, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+      
+      function drawHedgeRow(x, y, length, horizontal) {
+        ctx.fillStyle = "#2e8b57";
+        
+        if (horizontal) {
+          ctx.fillRect(x, y, length, 12);
+          
+          // Hedge texture
+          for (let i = 0; i < length; i += 10) {
+            ctx.fillStyle = "#228b22";
+            ctx.fillRect(x + i, y + 2, 8, 8);
+            ctx.fillStyle = "#32cd32";
+            ctx.fillRect(x + i + 2, y + 4, 4, 4);
+          }
+        } else {
+          ctx.fillRect(x, y, 12, length);
+          
+          // Hedge texture
+          for (let i = 0; i < length; i += 10) {
+            ctx.fillStyle = "#228b22";
+            ctx.fillRect(x + 2, y + i, 8, 8);
+            ctx.fillStyle = "#32cd32";
+            ctx.fillRect(x + 4, y + i + 2, 4, 4);
+          }
+        }
+      }
+      
+      function drawGrandstands(centerX, centerY, minX, maxX, minY, maxY, buffer) {
+        // Main grandstand opposite to paddock
+        const grandstandX = maxX + buffer + 50;
+        const grandstandY = centerY - 150;
+        const grandstandWidth = 300;
+        const grandstandHeight = 100;
+        
+        // Grandstand shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.fillRect(grandstandX + 8, grandstandY + 8, grandstandWidth, grandstandHeight);
+        
+        // Main structure
+        const grandstandGradient = ctx.createLinearGradient(grandstandX, grandstandY, grandstandX, grandstandY + grandstandHeight);
+        grandstandGradient.addColorStop(0, "#f0f0f0");
+        grandstandGradient.addColorStop(0.5, "#e0e0e0");
+        grandstandGradient.addColorStop(1, "#d0d0d0");
+        
+        ctx.fillStyle = grandstandGradient;
+        ctx.fillRect(grandstandX, grandstandY, grandstandWidth, grandstandHeight);
+        
+        // Roof
+        ctx.fillStyle = "#a0a0a0";
+        ctx.beginPath();
+        ctx.moveTo(grandstandX - 20, grandstandY);
+        ctx.lineTo(grandstandX + grandstandWidth + 20, grandstandY);
+        ctx.lineTo(grandstandX + grandstandWidth + 10, grandstandY - 30);
+        ctx.lineTo(grandstandX - 10, grandstandY - 30);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Seating rows
+        for (let row = 0; row < 5; row++) {
+          const rowY = grandstandY + 15 + row * 15;
+          ctx.fillStyle = row % 2 === 0 ? "#4169e1" : "#1e90ff";
+          ctx.fillRect(grandstandX + 10, rowY, grandstandWidth - 20, 12);
+        }
+        
+        // Support pillars
+        for (let i = 0; i < 4; i++) {
+          const pillarX = grandstandX + 30 + i * 80;
+          ctx.fillStyle = "#808080";
+          ctx.fillRect(pillarX, grandstandY + grandstandHeight, 8, 30);
+        }
+        
+        // Smaller viewing areas
+        const viewingAreas = [
+          { x: minX - buffer + 50, y: centerY + 200, w: 150, h: 60 },
+          { x: centerX + 100, y: minY - buffer - 80, w: 120, h: 50 }
+        ];
+        
+        viewingAreas.forEach(area => {
+          // Area shadow
+          ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+          ctx.fillRect(area.x + 4, area.y + 4, area.w, area.h);
+          
+          // Main structure
+          ctx.fillStyle = "#e8e8e8";
+          ctx.fillRect(area.x, area.y, area.w, area.h);
+          
+          // Seating
+          for (let row = 0; row < 3; row++) {
+            ctx.fillStyle = "#4169e1";
+            ctx.fillRect(area.x + 5, area.y + 10 + row * 15, area.w - 10, 10);
+          }
+        });
+      }
+      
+      function drawParkingAreas(centerX, centerY, minX, maxX, minY, maxY, buffer) {
+        // Main parking lot behind paddock
+        const parkingX = minX - buffer - 600;
+        const parkingY = centerY - 200;
+        const parkingWidth = 180;
+        const parkingHeight = 400;
+        
+        // Parking lot surface
+        ctx.fillStyle = "#696969";
+        ctx.fillRect(parkingX, parkingY, parkingWidth, parkingHeight);
+        
+        // Parking spaces
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        
+        // Horizontal parking spaces
+        for (let row = 0; row < 8; row++) {
+          const rowY = parkingY + 20 + row * 45;
+          
+          // Parking space dividers
+          for (let space = 0; space <= 6; space++) {
+            const spaceX = parkingX + space * 30;
+            ctx.beginPath();
+            ctx.moveTo(spaceX, rowY);
+            ctx.lineTo(spaceX, rowY + 40);
+            ctx.stroke();
+          }
+          
+          // Row divider
+          ctx.beginPath();
+          ctx.moveTo(parkingX, rowY + 40);
+          ctx.lineTo(parkingX + parkingWidth, rowY + 40);
+          ctx.stroke();
+        }
+        
+        // Parked cars (simple rectangles)
+        const carColors = ["#ff0000", "#0000ff", "#00ff00", "#ffff00", "#ffffff", "#000000", "#800080", "#ffa500"];
+        
+        for (let row = 0; row < 8; row++) {
+          for (let space = 0; space < 6; space++) {
+            if (Math.random() > 0.3) { // 70% chance of car being present
+              const carX = parkingX + 2 + space * 30;
+              const carY = parkingY + 22 + row * 45;
+              const carColor = carColors[Math.floor(Math.random() * carColors.length)];
+              
+              // Car shadow
+              ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+              ctx.fillRect(carX + 2, carY + 2, 26, 36);
+              
+              // Car body
+              ctx.fillStyle = carColor;
+              ctx.fillRect(carX, carY, 26, 36);
+              
+              // Car windows
+              ctx.fillStyle = "#87ceeb";
+              ctx.fillRect(carX + 3, carY + 3, 20, 12);
+              ctx.fillRect(carX + 3, carY + 21, 20, 12);
+            }
+          }
+        }
+        
+        // VIP parking area
+        const vipParkingX = maxX + buffer + 200;
+        const vipParkingY = centerY - 100;
+        const vipWidth = 120;
+        const vipHeight = 200;
+        
+        // VIP surface (different color)
+        ctx.fillStyle = "#2f4f4f";
+        ctx.fillRect(vipParkingX, vipParkingY, vipWidth, vipHeight);
+        
+        // VIP border
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(vipParkingX, vipParkingY, vipWidth, vipHeight);
+        
+        // VIP cars (luxury colors)
+        const vipColors = ["#000000", "#ffffff", "#c0c0c0", "#8b0000"];
+        for (let i = 0; i < 6; i++) {
+          const vipCarX = vipParkingX + 10;
+          const vipCarY = vipParkingY + 10 + i * 30;
+          const vipColor = vipColors[Math.floor(Math.random() * vipColors.length)];
+          
+          ctx.fillStyle = vipColor;
+          ctx.fillRect(vipCarX, vipCarY, 30, 20);
+          
+          ctx.fillStyle = "#87ceeb";
+          ctx.fillRect(vipCarX + 2, vipCarY + 2, 26, 7);
+          ctx.fillRect(vipCarX + 2, vipCarY + 11, 26, 7);
+        }
+        
+        // VIP sign
+        ctx.fillStyle = "#ffd700";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("VIP PARKING", vipParkingX + vipWidth/2, vipParkingY - 10);
+      }
+      
+      function drawDecorativeElements(centerX, centerY, minX, maxX, minY, maxY, buffer) {
+        const currentTime = Date.now() * 0.001;
+        
+        // Flags around the circuit
+        const flagPositions = [
+          { x: minX - buffer + 20, y: centerY - 100 },
+          { x: maxX + buffer - 20, y: centerY + 50 },
+          { x: centerX - 100, y: minY - buffer + 20 },
+          { x: centerX + 100, y: maxY + buffer - 20 }
+        ];
+        
+        flagPositions.forEach((flag, index) => {
+          // Flag pole
+          ctx.strokeStyle = "#c0c0c0";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(flag.x, flag.y);
+          ctx.lineTo(flag.x, flag.y - 80);
+          ctx.stroke();
+          
+          // Animated flag
+          const wavePhase = currentTime * 3 + index * 0.5;
+          const waveAmplitude = 8;
+          
+          ctx.fillStyle = index % 2 === 0 ? "#ff0000" : "#0000ff";
+          ctx.beginPath();
+          ctx.moveTo(flag.x, flag.y - 80);
+          
+          for (let i = 0; i <= 40; i += 2) {
+            const waveY = flag.y - 80 + i;
+            const waveX = flag.x + 40 - i + Math.sin(wavePhase + i * 0.2) * waveAmplitude * (40 - i) / 40;
+            ctx.lineTo(waveX, waveY);
+          }
+          
+          ctx.lineTo(flag.x, flag.y - 40);
+          ctx.closePath();
+          ctx.fill();
+        });
+        
+        // Tire barriers around track
+        const barrierPositions = [
+          { x: minX - 50, y: centerY, count: 8 },
+          { x: maxX + 50, y: centerY - 100, count: 6 },
+          { x: centerX, y: minY - 50, count: 10 }
+        ];
+        
+        barrierPositions.forEach(barrier => {
+          for (let i = 0; i < barrier.count; i++) {
+            const tireX = barrier.x + (i % 2) * 15;
+            const tireY = barrier.y + Math.floor(i / 2) * 25;
+            
+            // Tire shadow
+            ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+            ctx.beginPath();
+            ctx.arc(tireX + 2, tireY + 2, 12, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Tire
+            ctx.fillStyle = "#2f2f2f";
+            ctx.beginPath();
+            ctx.arc(tireX, tireY, 12, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Tire center
+            ctx.fillStyle = "#000000";
+            ctx.beginPath();
+            ctx.arc(tireX, tireY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        });
+        
+        // Sponsor banners
+        const banners = [
+          { x: minX + 100, y: minY - buffer - 20, w: 200, text: "RACING CHAMPIONSHIP" },
+          { x: maxX - 150, y: maxY + buffer + 10, w: 150, text: "EOIN'S RACING" }
+        ];
+        
+        banners.forEach(banner => {
+          // Banner background
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(banner.x, banner.y, banner.w, 30);
+          
+          // Banner border
+          ctx.strokeStyle = "#ff0000";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(banner.x, banner.y, banner.w, 30);
+          
+          // Banner text
+          ctx.fillStyle = "#000000";
+          ctx.font = "bold 12px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(banner.text, banner.x + banner.w/2, banner.y + 20);
+        });
+        
+        // Media towers
+        const mediaTowers = [
+          { x: centerX - 200, y: maxY + buffer + 50 },
+          { x: centerX + 200, y: minY - buffer - 50 }
+        ];
+        
+        mediaTowers.forEach(tower => {
+          // Tower base
+          ctx.fillStyle = "#808080";
+          ctx.fillRect(tower.x - 15, tower.y, 30, 60);
+          
+          // Camera platform
+          ctx.fillStyle = "#a0a0a0";
+          ctx.fillRect(tower.x - 20, tower.y - 15, 40, 15);
+          
+          // Camera
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(tower.x - 8, tower.y - 12, 16, 8);
+          
+          // Lens
+          ctx.fillStyle = "#4444ff";
+          ctx.beginPath();
+          ctx.arc(tower.x, tower.y - 8, 4, 0, 2 * Math.PI);
+          ctx.fill();
+        });
       }
 
       /**
@@ -6671,7 +7744,8 @@
         applyCameraTransform();
 
         // Render all world-space objects (affected by camera position)
-        drawTrack(); // Track surface and boundaries
+        drawTrack(); // Track surface and boundaries (drawn first as base layer)
+        createScenery(); // Background paddock, buildings, water features, and vegetation (drawn on top of track)
         drawTireMarks(); // Persistent tire marks from car movement
         drawFlames(); // Nitro flame effects (drawn behind cars)
 
@@ -6684,6 +7758,9 @@
 
         // Reset camera matrix for UI rendering
         resetCameraTransform();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "20px Arial";
+        ctx.fillText("SCENERY DEBUG - SCREEN SPACE", 60, 80);
 
         // Update all UI elements (not affected by camera movement)
         updateUI();
@@ -6707,6 +7784,9 @@
         raceStartTime = Date.now();
         currentLap = 1;
         raceComplete = false;
+        
+        // Reset scenery data to allow reinitialization
+        sceneryData = null;
         
         // Clear the final race standings
         finalRaceStandings = [];
