@@ -664,6 +664,67 @@
         min-height: 40px;
       }
 
+      /* Weather selector styles - matches difficulty selector */
+      .weather-selector {
+        background: linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.02)
+        );
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+
+      .weather-selector h3 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+      }
+
+      .weather-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+
+      .weather-btn {
+        flex: 1;
+        padding: 0.6rem 0.5rem;
+        margin: 0 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: bold;
+      }
+
+      .weather-btn:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--primary-color);
+      }
+
+      .weather-btn.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 15px var(--border-glow);
+      }
+
+      .weather-description {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        min-height: 40px;
+      }
+
       .race-complete {
         position: absolute;
         top: 50%;
@@ -1617,6 +1678,18 @@
             Standard race settings. AI makes occasional mistakes. Collisions enabled.
           </div>
         </div>
+        
+        <div class="weather-selector">
+          <h3>Select Weather Conditions</h3>
+          <div class="weather-buttons">
+            <button class="weather-btn active" onclick="setWeather('clear')" id="clearBtn">Clear</button>
+            <button class="weather-btn" onclick="setWeather('rain')" id="rainBtn">Rain</button>
+            <button class="weather-btn" onclick="setWeather('storm')" id="stormBtn">Storm</button>
+          </div>
+          <div class="weather-description" id="weatherDescription">
+            Perfect racing conditions. Optimal grip and visibility.
+          </div>
+        </div>
       </div>
 
       <canvas id="gameCanvas" width="1400" height="900"></canvas>
@@ -2392,6 +2465,10 @@
       
       // Difficulty settings
       let gameDifficulty = "medium"; // "easy", "medium", "hard"
+      
+      // Weather settings
+      let gameWeather = "clear"; // "clear", "rain", "storm"
+      
       const difficultySettings = {
         easy: {
           aiAttributeMultiplier: 0.85, // AI cars have reduced attributes
@@ -2434,6 +2511,9 @@
         
         // Initialize difficulty selector with medium selected
         setDifficulty("medium");
+        
+        // Initialize weather selector with clear weather selected
+        setWeather("clear");
       });
 
       // Leaderboard system
@@ -2455,6 +2535,8 @@
           time: currentRaceTime,
           position: player.racePosition,
           date: new Date().toLocaleDateString(),
+          weather: gameWeather, // Add weather information
+          difficulty: gameDifficulty // Add difficulty information too
         };
 
         leaderboard.push(entry);
@@ -2502,6 +2584,33 @@
         }
       }
 
+      // Weather selection functionality
+      function setWeather(type) {
+        // Update the game weather
+        gameWeather = type;
+        
+        // Update UI
+        document.querySelectorAll('.weather-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.getElementById(type + 'Btn').classList.add('active');
+        
+        // Update description
+        const descriptionElement = document.getElementById('weatherDescription');
+        if (type === 'clear') {
+          descriptionElement.textContent = 'Perfect racing conditions. Optimal grip and visibility.';
+        } else if (type === 'rain') {
+          descriptionElement.textContent = 'Wet track conditions. Reduced grip and limited visibility. Careful with acceleration and braking.';
+        } else if (type === 'storm') {
+          descriptionElement.textContent = 'Severe weather. Heavy rain with very poor visibility. Extremely challenging driving conditions.';
+        }
+        
+        // Initialize rain particles if weather has particles
+        if (weatherEffects[type].particles) {
+          initializeRainParticles();
+        }
+      }
+
       function updateRaceCompleteLeaderboard() {
         const list = document.getElementById("raceCompleteLeaderboard");
         list.innerHTML = "";
@@ -2526,9 +2635,16 @@
             displayName = words.slice(0, 2).join(" ");
           }
 
+          // Get weather info with default for older entries
+          const weatherDisplay = getWeatherDisplay(entry.weather || 'clear');
+          const difficultyDisplay = getDifficultyDisplay(entry.difficulty || 'medium');
+
           div.innerHTML = `
-                    <span>${index + 1}. ${displayName}</span>
-                    <span>${minutes}:${seconds.padStart(6, "0")}</span>
+                    <span style="width: 20px; display: inline-block;">${index + 1}.</span>
+                    <span style="width: 120px; display: inline-block;">${displayName}</span>
+                    <span style="width: 80px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
+                    <span style="width: 50px; display: inline-block; font-size: 0.9em;">${weatherDisplay}</span>
+                    <span style="width: 50px; display: inline-block; font-size: 0.8em; color: #888;">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
@@ -2553,16 +2669,42 @@
 
           // Truncate names that are too long (over 12 characters)
           let displayName = entry.name;
-          if (displayName.length > 12) {
-            displayName = displayName.substring(0, 10) + "...";
+          if (displayName.length > 10) {
+            displayName = displayName.substring(0, 8) + "...";
           }
 
+          // Get weather info with default for older entries
+          const weatherDisplay = getWeatherDisplay(entry.weather || 'clear');
+          const difficultyDisplay = getDifficultyDisplay(entry.difficulty || 'medium');
+
           div.innerHTML = `
-                    <span>${index + 1}. ${displayName}</span>
-                    <span>${minutes}:${seconds.padStart(6, "0")}</span>
+                    <span style="width: 15px; display: inline-block;">${index + 1}.</span>
+                    <span style="width: 80px; display: inline-block;">${displayName}</span>
+                    <span style="width: 70px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
+                    <span style="width: 40px; display: inline-block; font-size: 0.8em;">${weatherDisplay}</span>
+                    <span style="width: 35px; display: inline-block; font-size: 0.7em; color: #888;">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
+      }
+
+      // Helper functions for leaderboard display
+      function getWeatherDisplay(weather) {
+        switch(weather) {
+          case 'clear': return '';
+          case 'rain': return '(w)';
+          case 'storm': return '(vw)';
+          default: return '';
+        }
+      }
+
+      function getDifficultyDisplay(difficulty) {
+        switch(difficulty) {
+          case 'easy': return 'E';
+          case 'medium': return 'M';
+          case 'hard': return 'H';
+          default: return 'M';
+        }
       }
 
       function isNewRecord(time) {
@@ -2609,66 +2751,66 @@
       // Track design - Larger proper circuit with start/finish at middle bottom
       const track = {
         waypoints: [
-          // Start/finish line at middle bottom
+          // Fillte Faoi Dheireadh (Final Return) - Last turn before start/finish
           { x: 1000, y: 1300, checkpoint: true },
           { x: 1000, y: 1220 },
           { x: 1000, y: 1140 },
 
-          // Turn 1: Long right hander
+          // Droim Gealáin (Back Straight Ridge) - Long back straight section
           { x: 1080, y: 1060, checkpoint: true },
           { x: 1200, y: 980 },
           { x: 1350, y: 900 },
           { x: 1480, y: 820 },
 
-          // Turn 2: Fast sweeping right
+          // Géarchasadh Coscán (Sharp Brake Turn) - Sharp left corner
           { x: 1650, y: 750, checkpoint: true },
           { x: 1800, y: 680 },
           { x: 1920, y: 600 },
           { x: 2020, y: 520 },
 
-          // Turn 3: Sharp right at top section
+          // Cúinne Tír (Land Corner) - Medium left hander
           { x: 2100, y: 450, checkpoint: true },
           { x: 2150, y: 350 },
           { x: 2170, y: 250 },
           { x: 2160, y: 150 },
 
-          // Turn 4: Tight hairpin at top
+          // Zigzag na gCarr (Car Zigzag) - Technical chicane section
           { x: 2120, y: 80, checkpoint: true },
           { x: 2000, y: 50 },
           { x: 1850, y: 70 },
           { x: 1700, y: 120 },
 
-          // Turn 5: Long left sweep down
+          // Scuabaí Fada (Long Sweep) - Long left sweep down
           { x: 1550, y: 180, checkpoint: true },
           { x: 1400, y: 250 },
           { x: 1280, y: 330 },
           { x: 1180, y: 420 },
 
-          // Turn 6: Technical chicane section
+          // Cúinne an Fhilleadh (Hairpin Corner) - Tight hairpin at top
           { x: 1100, y: 500, checkpoint: true },
           { x: 1000, y: 580 },
           { x: 900, y: 660 },
           { x: 820, y: 740 },
 
-          // Turn 7: Medium left hander
+          // Géarchodadh Roth (Sharp Wheel Turn) - Sharp right at top section
           { x: 750, y: 820, checkpoint: true },
           { x: 650, y: 900 },
           { x: 520, y: 980 },
           { x: 380, y: 1050 },
 
-          // Turn 8: Sharp left corner
+          // Leantóir Gaoithe (Wind Follower) - Fast sweeping right
           { x: 250, y: 1120, checkpoint: true },
           { x: 180, y: 1200 },
           { x: 150, y: 1300 },
           { x: 180, y: 1400 },
 
-          // Turn 9: Long back straight approach
+          // Casadh Luais (Speed Corner) - Long right hander
           { x: 250, y: 1480, checkpoint: true },
           { x: 350, y: 1520 },
           { x: 480, y: 1540 },
           { x: 620, y: 1550 },
 
-          // Final sector back to start/finish
+          // Start/finish line approach - First turn of the track
           { x: 750, y: 1540, checkpoint: true },
           { x: 850, y: 1520 },
           { x: 920, y: 1480 },
@@ -2678,9 +2820,9 @@
         width: 160,
         // Checkpoint system for lap counting
         checkpoints: [
-          { id: 0, x: 1000, y: 1300, name: "Start/Finish" },
-          { id: 1, x: 2100, y: 450, name: "Sector 1" },
-          { id: 2, x: 250, y: 1120, name: "Sector 2" },
+          { id: 0, x: 1000, y: 1300, name: "Tosach/Críoch" }, // Start/Finish in Irish
+          { id: 1, x: 2100, y: 450, name: "Géarchodadh Roth" }, // Sharp Wheel Turn
+          { id: 2, x: 250, y: 1120, name: "Géarchasadh Coscán" }, // Sharp Brake Turn
         ],
       };
 
@@ -3009,6 +3151,218 @@
       const tireMarks = [];
       const sparkles = [];
       const flames = [];
+      const rainDrops = [];
+      const lightningBolts = [];
+      let lastLightningTime = 0;
+      
+      // Weather effects configuration
+      const weatherEffects = {
+        clear: {
+          visibility: 1.0,
+          gripMultiplier: 1.0,
+          particles: false
+        },
+        rain: {
+          visibility: 0.8,
+          gripMultiplier: 0.7,
+          particles: true,
+          particleCount: 100,
+          particleSpeed: 8
+        },
+        storm: {
+          visibility: 0.5,
+          gripMultiplier: 0.4,
+          particles: true,
+          particleCount: 200,
+          particleSpeed: 12
+        }
+      };
+      
+      // Initialize rain particles
+      function initializeRainParticles() {
+        rainDrops.length = 0;
+        if (!weatherEffects[gameWeather].particles) return;
+        
+        const config = weatherEffects[gameWeather];
+        // Create particles across a much larger world area (not just screen)
+        const worldSize = 3000; // Cover the entire track area
+        
+        for (let i = 0; i < config.particleCount; i++) {
+          rainDrops.push({
+            x: Math.random() * worldSize,
+            y: Math.random() * worldSize, 
+            speed: config.particleSpeed + Math.random() * 4,
+            length: 10 + Math.random() * 10,
+            angle: Math.PI / 6, // 30 degree angle
+            worldBased: true // Flag to indicate this uses world coordinates
+          });
+        }
+      }
+      
+      // Update rain particles
+      function updateRainParticles() {
+        if (!weatherEffects[gameWeather].particles) return;
+        
+        const config = weatherEffects[gameWeather];
+        const worldSize = 3000;
+        
+        rainDrops.forEach(drop => {
+          drop.x += Math.cos(drop.angle) * drop.speed;
+          drop.y += Math.sin(drop.angle) * drop.speed;
+          
+          // Reset particles that go off the world area
+          if (drop.x > worldSize || drop.y > worldSize || drop.x < -100 || drop.y < -100) {
+            drop.x = Math.random() * worldSize;
+            drop.y = Math.random() * worldSize;
+          }
+        });
+        
+        // Update lightning for storm weather
+        if (gameWeather === 'storm') {
+          updateLightning();
+        }
+      }
+      
+      // Lightning system for storms
+      function updateLightning() {
+        const currentTime = Date.now();
+        
+        // Create lightning bolts every 6 seconds
+        if (currentTime - lastLightningTime > 6000) {
+          createLightningBolt();
+          lastLightningTime = currentTime;
+        }
+        
+        // Update existing lightning bolts (fade them out)
+        for (let i = lightningBolts.length - 1; i >= 0; i--) {
+          lightningBolts[i].life--;
+          if (lightningBolts[i].life <= 0) {
+            lightningBolts.splice(i, 1);
+          }
+        }
+      }
+      
+      function createLightningBolt() {
+        // Create lightning bolt in a random location near the visible area
+        const boltX = camera.x + Math.random() * canvas.width;
+        const boltY = camera.y + Math.random() * canvas.height;
+        
+        lightningBolts.push({
+          x: boltX,
+          y: boltY,
+          life: 8, // Frames to display
+          maxLife: 8,
+          branches: generateLightningBranches(boltX, boltY)
+        });
+      }
+      
+      function generateLightningBranches(startX, startY) {
+        const branches = [];
+        const mainBranchLength = 200 + Math.random() * 300;
+        
+        // Main lightning bolt
+        let currentX = startX;
+        let currentY = startY;
+        const segments = 8 + Math.floor(Math.random() * 6);
+        
+        for (let i = 0; i < segments; i++) {
+          const segmentLength = mainBranchLength / segments;
+          const angle = -Math.PI/2 + (Math.random() - 0.5) * 0.8; // Generally downward
+          const nextX = currentX + Math.cos(angle) * segmentLength;
+          const nextY = currentY + Math.sin(angle) * segmentLength;
+          
+          branches.push({
+            x1: currentX,
+            y1: currentY,
+            x2: nextX,
+            y2: nextY,
+            thickness: 3 + Math.random() * 2
+          });
+          
+          // Add smaller side branches occasionally
+          if (Math.random() < 0.4) {
+            const branchAngle = angle + (Math.random() - 0.5) * 1.5;
+            const branchLength = segmentLength * (0.3 + Math.random() * 0.4);
+            branches.push({
+              x1: currentX,
+              y1: currentY,
+              x2: currentX + Math.cos(branchAngle) * branchLength,
+              y2: currentY + Math.sin(branchAngle) * branchLength,
+              thickness: 1 + Math.random() * 1
+            });
+          }
+          
+          currentX = nextX;
+          currentY = nextY;
+        }
+        
+        return branches;
+      }
+      
+      // Render weather effects
+      function renderWeatherEffects() {
+        const config = weatherEffects[gameWeather];
+        
+        // Draw rain particles in world coordinates
+        if (config.particles && rainDrops.length > 0) {
+          ctx.save();
+          ctx.strokeStyle = gameWeather === 'storm' ? 'rgba(200, 200, 255, 0.6)' : 'rgba(150, 150, 200, 0.4)';
+          ctx.lineWidth = gameWeather === 'storm' ? 2 : 1;
+          
+          rainDrops.forEach(drop => {
+            // Only draw particles that are visible on screen
+            if (drop.x >= camera.x - 100 && drop.x <= camera.x + canvas.width + 100 &&
+                drop.y >= camera.y - 100 && drop.y <= camera.y + canvas.height + 100) {
+              ctx.beginPath();
+              ctx.moveTo(drop.x, drop.y);
+              ctx.lineTo(
+                drop.x + Math.cos(drop.angle) * drop.length,
+                drop.y + Math.sin(drop.angle) * drop.length
+              );
+              ctx.stroke();
+            }
+          });
+          ctx.restore();
+        }
+        
+        // Draw lightning bolts for storm weather
+        if (gameWeather === 'storm' && lightningBolts.length > 0) {
+          ctx.save();
+          
+          lightningBolts.forEach(bolt => {
+            const alpha = bolt.life / bolt.maxLife;
+            
+            bolt.branches.forEach(branch => {
+              // Main bolt glow
+              ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.8})`;
+              ctx.shadowBlur = 15;
+              ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+              ctx.lineWidth = branch.thickness;
+              
+              ctx.beginPath();
+              ctx.moveTo(branch.x1, branch.y1);
+              ctx.lineTo(branch.x2, branch.y2);
+              ctx.stroke();
+              
+              // Inner bright core
+              ctx.shadowBlur = 5;
+              ctx.strokeStyle = `rgba(200, 200, 255, ${alpha})`;
+              ctx.lineWidth = branch.thickness * 0.3;
+              
+              ctx.beginPath();
+              ctx.moveTo(branch.x1, branch.y1);
+              ctx.lineTo(branch.x2, branch.y2);
+              ctx.stroke();
+            });
+          });
+          
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.restore();
+        }
+        
+        // Note: Canvas dimming removed - using grass color changes instead for better coverage
+      }
 
       // Add tire mark
       function addTireMark(x, y, angle) {
@@ -3817,6 +4171,15 @@
         frontGrip = Math.max(0.3, Math.min(1.0, frontGrip));
         rearGrip = Math.max(0.25, Math.min(1.0, rearGrip));
 
+        // Apply weather effects to grip
+        const weatherGripMultiplier = weatherEffects[gameWeather].gripMultiplier;
+        frontGrip *= weatherGripMultiplier;
+        rearGrip *= weatherGripMultiplier;
+
+        // Ensure final grip values stay within bounds after weather effects
+        frontGrip = Math.max(0.1, Math.min(1.0, frontGrip));
+        rearGrip = Math.max(0.1, Math.min(1.0, rearGrip));
+
         return { front: frontGrip, rear: rearGrip };
       }
 
@@ -4468,9 +4831,9 @@
           // Wide finish line area spans the track width to catch cars using inside/outside lines
           const finishY = nextCheckpoint.y;
           const finishCenterX = nextCheckpoint.x;
-          // Reduced finish line detection area to prevent wide cutting
-          const finishWidth = 280; // Reduced from 350
-          const finishHeight = 120; // Reduced from 150
+          // Generous finish line detection area to accommodate all racing lines
+          const finishWidth = 320; // Increased from 280 to ensure wide lines are detected
+          const finishHeight = 140; // Increased from 120 for better coverage
 
           // Check if car is within the finish line area
           if (
@@ -4482,12 +4845,12 @@
             checkpointHit = true;
           }
         } else {
-          // Regular circular checkpoint detection for other checkpoints - smaller detection area
+          // Regular circular checkpoint detection for other checkpoints - wider detection area
           const dx = nextCheckpoint.x - car.x;
           const dy = nextCheckpoint.y - car.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 45) { // Reduced from 60 to make checkpoints more restrictive
+          if (distance < 80) { // Increased from 45 to accommodate wider racing lines in all weather conditions
             checkpointHit = true;
           }
         }
@@ -5375,15 +5738,38 @@
 
         // Add padding to ensure no gaps
         const padding = 200;
+        
+        // Weather-based grass colors
+        let grassColors;
+        if (gameWeather === 'clear') {
+          grassColors = {
+            start: "#3a7c3a",
+            middle: "#2d5a2d", 
+            end: "#1f4a1f"
+          };
+        } else if (gameWeather === 'rain') {
+          grassColors = {
+            start: "#2a5c2a",
+            middle: "#1d3a1d",
+            end: "#0f2a0f"
+          };
+        } else if (gameWeather === 'storm') {
+          grassColors = {
+            start: "#1a3c1a",
+            middle: "#0d2a0d",
+            end: "#051a05"
+          };
+        }
+        
         const grassGradient = ctx.createLinearGradient(
           worldLeft - padding,
           worldTop - padding,
           worldRight + padding,
           worldBottom + padding
         );
-        grassGradient.addColorStop(0, "#3a7c3a");
-        grassGradient.addColorStop(0.5, "#2d5a2d");
-        grassGradient.addColorStop(1, "#1f4a1f");
+        grassGradient.addColorStop(0, grassColors.start);
+        grassGradient.addColorStop(0.5, grassColors.middle);
+        grassGradient.addColorStop(1, grassColors.end);
 
         ctx.fillStyle = grassGradient;
         ctx.fillRect(
@@ -6665,6 +7051,9 @@
 
           // Update camera position to smoothly follow the player
           updateCamera();
+
+          // Update weather effects (rain particles, etc.)
+          updateRainParticles();
         }
 
         // Apply camera transformation matrix for world-space rendering
@@ -6681,6 +7070,9 @@
 
         // Render collision and interaction effects
         drawSparkles();
+
+        // Render weather effects (rain particles and overlay dimming)
+        renderWeatherEffects();
 
         // Reset camera matrix for UI rendering
         resetCameraTransform();
@@ -6797,6 +7189,11 @@
 
         // Create AI cars
         createAICars();
+
+        // Initialize weather effects for the race
+        if (weatherEffects[gameWeather].particles) {
+          initializeRainParticles();
+        }
 
         document.getElementById("raceComplete").style.display = "none";
       }
