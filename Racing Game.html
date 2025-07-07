@@ -430,6 +430,10 @@
         text-transform: uppercase;
         position: relative;
         overflow: hidden;
+        margin: 1rem auto;
+        display: block;
+        text-align: center;
+        line-height: 1.2;
       }
 
       .professional-btn::before {
@@ -718,6 +722,132 @@
         box-shadow: 0 0 15px var(--border-glow);
       }
 
+      /* Time Trial Mode Styles */
+      .mode-selector {
+        margin: 1rem 0 1.5rem 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .mode-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .mode-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: bold;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .mode-btn:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--accent-color);
+        transform: translateY(-2px);
+      }
+
+      .mode-btn.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 20px var(--border-glow);
+        color: white;
+      }
+
+      .time-trial-section {
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .time-trial-section h3 {
+        margin: 0 0 1rem 0;
+        color: var(--accent-color);
+        font-size: 1.1rem;
+      }
+
+      .time-trial-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .time-trial-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .time-trial-btn:hover {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      .ghost-list {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .ghost-entry {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.9rem;
+      }
+
+      .ghost-entry:last-child {
+        border-bottom: none;
+      }
+
+      .ghost-entry span:first-child {
+        font-weight: bold;
+        color: var(--primary-color);
+      }
+
+      .ghost-entry span:nth-child(2) {
+        color: var(--accent-color);
+        font-family: 'Courier New', monospace;
+      }
+
+      .ghost-entry button {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        background-color: rgba(255, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .ghost-entry button:hover {
+        background-color: rgba(255, 0, 0, 0.8);
+      }
+
+      /* Weather Description Styles */
       .weather-description {
         color: var(--text-secondary);
         font-size: 0.9rem;
@@ -1653,9 +1783,30 @@
         >
           Grand Prix Circuit Challenge
         </p>
+        
+        <!-- Game Mode Selector -->
+        <div class="mode-selector">
+          <div class="mode-buttons">
+            <button class="mode-btn active" onclick="setTimeTrialMode(false)" id="raceModeBtn">Race Mode</button>
+            <button class="mode-btn" onclick="setTimeTrialMode(true)" id="timeTrialModeBtn">Time Trial</button>
+          </div>
+        </div>
+        
         <button class="professional-btn" onclick="startRace()">
           START RACE
         </button>
+
+        <!-- Time Trial Controls (hidden by default) -->
+        <div id="timeTrialControls" style="display: none;">
+          <div class="time-trial-section">
+            <h3>Ghost Cars</h3>
+            <div class="time-trial-buttons">
+              <button class="time-trial-btn" onclick="importTimeTrialLap()">Import Ghost</button>
+              <button class="time-trial-btn" onclick="clearAllTimeTrialGhosts()">Clear All</button>
+            </div>
+            <div id="timeTrialGhostList" class="ghost-list"></div>
+          </div>
+        </div>
 
         <div class="start-instructions">
           <h3>Race Instructions</h3>
@@ -2006,6 +2157,45 @@
         >
           <button class="professional-btn" onclick="restartRace()">
             RACE AGAIN
+          </button>
+          <button class="professional-btn" onclick="returnToTeamSelection()">
+            CHANGE TEAM
+          </button>
+        </div>
+      </div>
+
+      <!-- Time Trial Complete Dialog -->
+      <div class="race-complete" id="timeTrialComplete" style="display: none;">
+        <h2 style="color: var(--primary-color); margin-bottom: 1rem">
+          TIME TRIAL COMPLETE
+        </h2>
+        <p style="font-size: 1.2rem; margin: 0.5rem 0">
+          Lap Time:
+          <span
+            id="timeTrialLapTime"
+            style="color: var(--accent-color); font-weight: bold"
+          ></span>
+        </p>
+        <p
+          id="timeTrialResult"
+          style="
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 1rem 0;
+          "
+        ></p>
+
+        <div
+          style="
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+          "
+        >
+          <button class="professional-btn" onclick="restartRace()">
+            TRY AGAIN
           </button>
           <button class="professional-btn" onclick="returnToTeamSelection()">
             CHANGE TEAM
@@ -2469,6 +2659,14 @@
       // Weather settings
       let gameWeather = "clear"; // "clear", "rain", "storm"
       
+      // Time Trial mode settings
+      let isTimeTrialMode = false;
+      let isRecordingGhost = false;
+      let currentGhostRecording = [];
+      let timeTrialGhosts = [];
+      let timeTrialLaps = [];
+      let bestTimeTrialLap = null;
+      
       const difficultySettings = {
         easy: {
           aiAttributeMultiplier: 0.85, // AI cars have reduced attributes
@@ -2514,6 +2712,9 @@
         
         // Initialize weather selector with clear weather selected
         setWeather("clear");
+        
+        // Initialize mode UI (race mode by default)
+        updateModeUI();
       });
 
       // Leaderboard system
@@ -2536,7 +2737,8 @@
           position: player.racePosition,
           date: new Date().toLocaleDateString(),
           weather: gameWeather, // Add weather information
-          difficulty: gameDifficulty // Add difficulty information too
+          difficulty: gameDifficulty, // Add difficulty information too
+          team: getSelectedTeamName() // Add team information
         };
 
         leaderboard.push(entry);
@@ -2611,6 +2813,47 @@
         }
       }
 
+      // Time Trial mode selection functionality
+      function toggleTimeTrialMode() {
+        isTimeTrialMode = !isTimeTrialMode;
+        updateModeUI();
+      }
+      
+      function setTimeTrialMode(enabled) {
+        isTimeTrialMode = enabled;
+        updateModeUI();
+      }
+      
+      function updateModeUI() {
+        // Update UI
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        
+        const timeTrialControls = document.getElementById('timeTrialControls');
+        const difficultySelector = document.querySelector('.difficulty-selector');
+        
+        if (isTimeTrialMode) {
+          document.getElementById('timeTrialModeBtn').classList.add('active');
+          if (timeTrialControls) {
+            timeTrialControls.style.display = 'block';
+          }
+          // Hide difficulty selector in time trial mode
+          if (difficultySelector) {
+            difficultySelector.style.display = 'none';
+          }
+        } else {
+          document.getElementById('raceModeBtn').classList.add('active');
+          if (timeTrialControls) {
+            timeTrialControls.style.display = 'none';
+          }
+          // Show difficulty selector in race mode
+          if (difficultySelector) {
+            difficultySelector.style.display = 'block';
+          }
+        }
+      }
+
       function updateRaceCompleteLeaderboard() {
         const list = document.getElementById("raceCompleteLeaderboard");
         list.innerHTML = "";
@@ -2638,13 +2881,15 @@
           // Get weather info with default for older entries
           const weatherDisplay = getWeatherDisplay(entry.weather || 'clear');
           const difficultyDisplay = getDifficultyDisplay(entry.difficulty || 'medium');
+          const teamDisplay = getTeamDisplayName(entry.team);
 
           div.innerHTML = `
                     <span style="width: 20px; display: inline-block;">${index + 1}.</span>
-                    <span style="width: 120px; display: inline-block;">${displayName}</span>
+                    <span style="width: 90px; display: inline-block;">${displayName}</span>
+                    <span style="width: 40px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
                     <span style="width: 80px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
-                    <span style="width: 50px; display: inline-block; font-size: 0.9em;">${weatherDisplay}</span>
-                    <span style="width: 50px; display: inline-block; font-size: 0.8em; color: #888;">${difficultyDisplay}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.9em;">${weatherDisplay}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: #888;">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
@@ -2676,13 +2921,15 @@
           // Get weather info with default for older entries
           const weatherDisplay = getWeatherDisplay(entry.weather || 'clear');
           const difficultyDisplay = getDifficultyDisplay(entry.difficulty || 'medium');
+          const teamDisplay = getTeamDisplayName(entry.team);
 
           div.innerHTML = `
                     <span style="width: 15px; display: inline-block;">${index + 1}.</span>
-                    <span style="width: 80px; display: inline-block;">${displayName}</span>
+                    <span style="width: 65px; display: inline-block;">${displayName}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
                     <span style="width: 70px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
-                    <span style="width: 40px; display: inline-block; font-size: 0.8em;">${weatherDisplay}</span>
-                    <span style="width: 35px; display: inline-block; font-size: 0.7em; color: #888;">${difficultyDisplay}</span>
+                    <span style="width: 25px; display: inline-block; font-size: 0.8em;">${weatherDisplay}</span>
+                    <span style="width: 25px; display: inline-block; font-size: 0.7em; color: #888;">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
@@ -2705,6 +2952,30 @@
           case 'hard': return 'H';
           default: return 'M';
         }
+      }
+
+      function getTeamDisplayName(teamName) {
+        if (!teamName) return '';
+        // Create short team codes for display
+        const teamCodes = {
+          'Emerald Isle Racing': 'EIR',
+          'Dragon Force Motorsport': 'DFM',
+          'Highland Racing Team': 'HRT',
+          'Britannia Motors': 'BRT',
+          'Tricolore Racing': 'TCR',
+          'Kaiser Motorsport': 'KMS',
+          'Iberian Speed': 'IBS',
+          'Veloce Italia': 'VIT',
+          'Adriatic Racing': 'ADR',
+          'Liberty Racing': 'LBR',
+          'Rising Sun Motors': 'RSM',
+          'Celestial Motors': 'CEL',
+          'Maharaja Motors': 'MHJ',
+          'Samba Racing Team': 'SRT',
+          'Velocidad Venezuela': 'VEV',
+          'Regina Curse': 'RGC'
+        };
+        return teamCodes[teamName] || teamName.substring(0, 3).toUpperCase();
       }
 
       function isNewRecord(time) {
@@ -4201,6 +4472,284 @@
         updatePlayerSpeed();
         constrainToBounds();
         checkPlayerCheckpoints();
+        
+        // Record ghost data for time trial
+        if (isTimeTrialMode && isRecordingGhost && gameRunning) {
+          currentGhostRecording.push({
+            x: player.x,
+            y: player.y,
+            angle: player.angle,
+            timestamp: Date.now()
+          });
+        }
+      }
+      
+      // Time Trial ghost management functions
+      function updateTimeTrialGhosts() {
+        if (!isTimeTrialMode) return;
+        
+        timeTrialGhosts.forEach(ghost => {
+          ghost.update();
+        });
+      }
+      
+      function completeTimeTrialLap(lapTime) {
+        if (!isTimeTrialMode) return;
+        
+        // Stop recording current ghost
+        isRecordingGhost = false;
+        
+        // Create lap data object
+        const lapData = {
+          playerName: selectedTeam || "Player",
+          teamName: getSelectedTeamName(),
+          lapTime: lapTime,
+          ghostData: [...currentGhostRecording],
+          weather: gameWeather,
+          difficulty: gameDifficulty,
+          date: new Date().toISOString(),
+          track: "Circuit Racer Track" // Add track name for future track support
+        };
+        
+        // Add to time trial laps
+        timeTrialLaps.push(lapData);
+        
+        // Update best lap if this is better
+        if (!bestTimeTrialLap || lapTime < bestTimeTrialLap.lapTime) {
+          bestTimeTrialLap = lapData;
+        }
+        
+        // Show time trial complete screen
+        showTimeTrialComplete(lapData);
+      }
+      
+      function getSelectedTeamName() {
+        const teamMapping = {
+          emerald_isle: "Emerald Isle Racing",
+          dragon_force: "Dragon Force Motorsport",
+          highland_racing: "Highland Racing Team",
+          britannia_motors: "Britannia Motors",
+          tricolore_racing: "Tricolore Racing",
+          kaiser_motorsport: "Kaiser Motorsport",
+          iberian_speed: "Iberian Speed",
+          veloce_italia: "Veloce Italia",
+          adriatic_racing: "Adriatic Racing",
+          liberty_racing: "Liberty Racing",
+          rising_sun: "Rising Sun Motors",
+          celestial_motors: "Celestial Motors",
+          maharaja_motors: "Maharaja Motors",
+          samba_racing: "Samba Racing Team",
+          velocidad_venezuela: "Velocidad Venezuela",
+          regina_curse: "Regina Curse",
+        };
+        return teamMapping[selectedTeam] || "Unknown Team";
+      }
+      
+      // Import/Export functions for time trial data
+      function exportTimeTrialLap(lapData) {
+        const exportData = {
+          version: "1.0",
+          ...lapData
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `time-trial-${lapData.playerName}-${formatTime(lapData.lapTime)}.json`;
+        link.click();
+      }
+      
+      function importTimeTrialLap() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const lapData = JSON.parse(e.target.result);
+              
+              // Validate imported data
+              if (!lapData.ghostData || !lapData.lapTime || !lapData.playerName) {
+                alert('Invalid time trial file format!');
+                return;
+              }
+              
+              // Create ghost car from imported data
+              const ghost = new GhostCar(
+                lapData.ghostData,
+                lapData.playerName,
+                lapData.teamName,
+                lapData.lapTime
+              );
+              
+              timeTrialGhosts.push(ghost);
+              
+              alert(`Successfully imported ${lapData.playerName}'s lap: ${formatTime(lapData.lapTime)}`);
+              updateTimeTrialGhostList();
+              
+            } catch (error) {
+              alert('Error reading time trial file: ' + error.message);
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+      
+      function removeTimeTrialGhost(index) {
+        if (index >= 0 && index < timeTrialGhosts.length) {
+          timeTrialGhosts.splice(index, 1);
+          updateTimeTrialGhostList();
+        }
+      }
+      
+      function clearAllTimeTrialGhosts() {
+        timeTrialGhosts.length = 0;
+        updateTimeTrialGhostList();
+      }
+
+      // GhostCar class for time trial mode
+      class GhostCar {
+        constructor(ghostData, playerName, lapTime) {
+          this.ghostData = ghostData;
+          this.playerName = playerName;
+          this.lapTime = lapTime;
+          this.currentFrame = 0;
+          this.isActive = true;
+          this.x = 0;
+          this.y = 0;
+          this.angle = 0;
+          this.startTime = null;
+        }
+
+        reset() {
+          this.currentFrame = 0;
+          this.startTime = null;
+          this.isActive = true;
+        }
+
+        update() {
+          if (!this.isActive || !this.ghostData || this.ghostData.length === 0) return;
+
+          if (!this.startTime && gameRunning) {
+            this.startTime = Date.now();
+          }
+
+          if (this.startTime) {
+            const elapsedTime = Date.now() - this.startTime;
+            
+            // Find the appropriate frame based on elapsed time
+            let targetFrame = 0;
+            for (let i = 0; i < this.ghostData.length; i++) {
+              const frameTime = this.ghostData[i].timestamp - this.ghostData[0].timestamp;
+              if (frameTime <= elapsedTime) {
+                targetFrame = i;
+              } else {
+                break;
+              }
+            }
+
+            if (targetFrame < this.ghostData.length) {
+              this.currentFrame = targetFrame;
+              const frame = this.ghostData[targetFrame];
+              this.x = frame.x;
+              this.y = frame.y;
+              this.angle = frame.angle;
+            } else {
+              // Ghost has finished, make it inactive
+              this.isActive = false;
+            }
+          }
+        }
+      }
+
+      // Show time trial complete screen
+      function showTimeTrialComplete(lapData) {
+        gameRunning = false;
+        
+        // Display lap time
+        const minutes = Math.floor(lapData.lapTime / 60);
+        const seconds = (lapData.lapTime % 60).toFixed(3);
+        document.getElementById("timeTrialLapTime").textContent = `${minutes}:${seconds.padStart(6, "0")}`;
+        
+        // Check if this is a new best lap
+        const isNewBest = !bestTimeTrialLap || lapData.lapTime < bestTimeTrialLap.lapTime;
+        
+        if (isNewBest) {
+          document.getElementById("timeTrialResult").textContent = "NEW BEST LAP!";
+          document.getElementById("timeTrialResult").style.color = "var(--accent-color)";
+        } else {
+          const improvement = lapData.lapTime - bestTimeTrialLap.lapTime;
+          const impMinutes = Math.floor(Math.abs(improvement) / 60);
+          const impSeconds = (Math.abs(improvement) % 60).toFixed(3);
+          document.getElementById("timeTrialResult").textContent = `+${impMinutes}:${impSeconds.padStart(6, "0")} from best`;
+          document.getElementById("timeTrialResult").style.color = "var(--text-secondary)";
+        }
+        
+        // Show the complete screen
+        document.getElementById("timeTrialComplete").style.display = "block";
+      }
+
+      // Draw ghost car
+      function drawGhostCar(ghost) {
+        if (!ghost.isActive) return;
+
+        ctx.save();
+        ctx.globalAlpha = 0.4; // Make ghost translucent
+        
+        // Position and orient the ghost car
+        ctx.translate(ghost.x, ghost.y);
+        ctx.rotate(ghost.angle);
+
+        // Draw a simplified ghost car
+        const width = 20;
+        const height = 10;
+
+        // Ghost car body
+        ctx.fillStyle = "rgba(100, 150, 255, 0.6)";
+        ctx.beginPath();
+        ctx.moveTo(width / 2, 0);
+        ctx.quadraticCurveTo(width / 3, -height / 2, -width / 3, -height / 2);
+        ctx.quadraticCurveTo(-width / 2, 0, -width / 3, height / 2);
+        ctx.quadraticCurveTo(width / 3, height / 2, width / 2, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ghost car outline
+        ctx.strokeStyle = "rgba(150, 200, 255, 0.8)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // Update time trial ghost list in UI
+      function updateTimeTrialGhostList() {
+        const list = document.getElementById("timeTrialGhostList");
+        if (!list) return;
+        
+        list.innerHTML = "";
+        
+        timeTrialGhosts.forEach((ghost, index) => {
+          const div = document.createElement("div");
+          div.className = "time-trial-ghost-item";
+          
+          const minutes = Math.floor(ghost.lapTime / 60);
+          const seconds = (ghost.lapTime % 60).toFixed(3);
+          
+          div.innerHTML = `
+            <span>${ghost.playerName} - ${minutes}:${seconds.padStart(6, "0")}</span>
+            <button onclick="removeTimeTrialGhost(${index})">Remove</button>
+          `;
+          
+          list.appendChild(div);
+        });
       }
 
       function calculateCurrentSpeed() {
@@ -4899,6 +5448,12 @@
                     currentLapTime = lapTime;
                     lastLapTime = lapTime; // Store the last completed lap time
                     lapTimes.push(currentLapTime);
+
+                    // Handle time trial lap completion
+                    if (isTimeTrialMode) {
+                      completeTimeTrialLap(lapTime);
+                      return; // Exit early for time trial - single lap only
+                    }
 
                     // Update best lap time for current race
                     if (currentLapTime < bestLapTime) {
@@ -7034,20 +7589,25 @@
           // Update player car physics and input handling
           updatePlayer();
 
-          // Update all AI cars (movement, decision-making, pathfinding)
-          updateAI();
-
-          // Validate checkpoint progression for lap counting and anti-cheat
-          checkAICheckpoints();
-
-          // Process collision detection between all cars
-          handleCarCollisions();
-
-          // Calculate current race positions for all participants
-          updatePositions();
-
-          // Check if any car has completed the required laps
-          checkRaceCompletion();
+          // Update AI cars or ghost cars depending on mode
+          if (isTimeTrialMode) {
+            updateTimeTrialGhosts();
+          } else {
+            // Update all AI cars (movement, decision-making, pathfinding)
+            updateAI();
+            
+            // Validate checkpoint progression for lap counting and anti-cheat
+            checkAICheckpoints();
+            
+            // Process collision detection between all cars
+            handleCarCollisions();
+            
+            // Calculate current race positions for all participants
+            updatePositions();
+            
+            // Check if any car has completed the required laps
+            checkRaceCompletion();
+          }
 
           // Update camera position to smoothly follow the player
           updateCamera();
@@ -7065,7 +7625,13 @@
         drawFlames(); // Nitro flame effects (drawn behind cars)
 
         // Render all cars with current positions and rotations
-        aiCars.forEach(drawCar);
+        if (isTimeTrialMode) {
+          // Render ghost cars first (behind player)
+          timeTrialGhosts.forEach(drawGhostCar);
+        } else {
+          // Render AI cars in regular race mode
+          aiCars.forEach(drawCar);
+        }
         drawCar(player);
 
         // Render collision and interaction effects
@@ -7187,8 +7753,26 @@
           player.reliabilityFactor = reliabilityMultiplier;
         }
 
-        // Create AI cars
-        createAICars();
+        // Initialize time trial or regular race
+        if (isTimeTrialMode) {
+          // Time trial mode
+          totalLaps = 1; // Single lap for time trial
+          
+          // Reset ghost cars to start position
+          timeTrialGhosts.forEach(ghost => ghost.reset());
+          
+          // Start recording new ghost data
+          currentGhostRecording = [];
+          isRecordingGhost = true;
+          
+          console.log("Time Trial mode started");
+        } else {
+          // Regular race mode
+          totalLaps = 5; // Standard 5-lap race
+          
+          // Create AI cars
+          createAICars();
+        }
 
         // Initialize weather effects for the race
         if (weatherEffects[gameWeather].particles) {
@@ -7196,6 +7780,7 @@
         }
 
         document.getElementById("raceComplete").style.display = "none";
+        document.getElementById("timeTrialComplete").style.display = "none";
       }
 
       // Restart race
