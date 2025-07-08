@@ -846,52 +846,6 @@
         border-color: #c82333;
       }
 
-      .ghost-list {
-        max-height: 150px;
-        overflow-y: auto;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        background-color: rgba(0, 0, 0, 0.2);
-      }
-
-      .ghost-entry {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        font-size: 0.9rem;
-      }
-
-      .ghost-entry:last-child {
-        border-bottom: none;
-      }
-
-      .ghost-entry span:first-child {
-        font-weight: bold;
-        color: var(--primary-color);
-      }
-
-      .ghost-entry span:nth-child(2) {
-        color: var(--accent-color);
-        font-family: 'Courier New', monospace;
-      }
-
-      .ghost-entry button {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-        background-color: rgba(255, 0, 0, 0.6);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      }
-
-      .ghost-entry button:hover {
-        background-color: rgba(255, 0, 0, 0.8);
-      }
-
       /* Responsive layout improvements for start screen */
       @media (max-height: 900px) {
         .start-screen {
@@ -967,11 +921,6 @@
         .time-trial-instructions {
           font-size: 0.85rem;
         }
-      }
-
-      /* Ensure ghost list doesn't get too tall */
-      .ghost-list {
-        max-height: 120px;
       }
 
       /* Weather Description Styles */
@@ -1916,23 +1865,6 @@
 
         <!-- Time Trial Controls (hidden by default) -->
         <div id="timeTrialControls" style="display: none;">
-          <div class="time-trial-section">
-            <h3>Ghost Car Management</h3>
-            <div class="time-trial-instructions">
-              <p><strong>How Ghost Cars Work:</strong></p>
-              <p><strong>Recording:</strong> Your fastest lap will be automatically saved as a ghost</p>
-              <p><strong>Import:</strong> Load ghost laps from other players as JSON files</p>
-              <p><strong>Export:</strong> Share your best laps with others after completing a run</p>
-              <p><strong>Racing:</strong> Ghost cars appear as semi-transparent vehicles on track</p>
-            </div>
-            <div class="time-trial-buttons">
-              <button class="time-trial-btn primary" onclick="importTimeTrialLap()">Import Ghost</button>
-              <button class="time-trial-btn danger" onclick="clearAllTimeTrialGhosts()">Clear All</button>
-            </div>
-            <div id="timeTrialGhostList" class="ghost-list">
-              <div class="ghost-list-empty">No ghost cars loaded. Import ghosts or complete a lap to start racing against them!</div>
-            </div>
-          </div>
           
           <!-- Time Trial Leaderboard -->
           <div class="time-trial-leaderboard">
@@ -2814,9 +2746,6 @@
       
       // Time Trial mode settings
       let isTimeTrialMode = false;
-      let isRecordingGhost = false;
-      let currentGhostRecording = [];
-      let timeTrialGhosts = [];
       let timeTrialLaps = [];
       let bestTimeTrialLap = null;
       
@@ -4789,39 +4718,16 @@
         updatePlayerSpeed();
         constrainToBounds();
         checkPlayerCheckpoints();
-        
-        // Record ghost data for time trial
-        if (isTimeTrialMode && isRecordingGhost && gameRunning) {
-          currentGhostRecording.push({
-            x: player.x,
-            y: player.y,
-            angle: player.angle,
-            timestamp: Date.now()
-          });
-        }
-      }
-      
-      // Time Trial ghost management functions
-      function updateTimeTrialGhosts() {
-        if (!isTimeTrialMode) return;
-        
-        timeTrialGhosts.forEach(ghost => {
-          ghost.update();
-        });
       }
       
       function completeTimeTrialLap(lapTime) {
         if (!isTimeTrialMode) return;
-        
-        // Stop recording current ghost
-        isRecordingGhost = false;
         
         // Create lap data object
         const lapData = {
           playerName: getSelectedTeamName(),
           teamName: getSelectedTeamName(),
           lapTime: lapTime,
-          ghostData: [...currentGhostRecording],
           weather: gameWeather,
           difficulty: gameDifficulty,
           date: new Date().toISOString(),
@@ -4871,130 +4777,6 @@
         return teamMapping[selectedTeam] || "Unknown Team";
       }
       
-      // Import/Export functions for time trial data
-      function exportTimeTrialLap(lapData) {
-        const exportData = {
-          version: "1.0",
-          ...lapData
-        };
-        
-        const dataStr = JSON.stringify(exportData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `time-trial-${lapData.playerName}-${formatTime(lapData.lapTime)}.json`;
-        link.click();
-      }
-      
-      function importTimeTrialLap() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = function(e) {
-          const file = e.target.files[0];
-          if (!file) return;
-          
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            try {
-              const lapData = JSON.parse(e.target.result);
-              
-              // Validate imported data
-              if (!lapData.ghostData || !lapData.lapTime || !lapData.playerName) {
-                alert('Invalid time trial file format!');
-                return;
-              }
-              
-              // Create ghost car from imported data
-              const ghost = new GhostCar(
-                lapData.ghostData,
-                lapData.playerName,
-                lapData.teamName,
-                lapData.lapTime
-              );
-              
-              timeTrialGhosts.push(ghost);
-              
-              alert(`Successfully imported ${lapData.playerName}'s lap: ${formatTime(lapData.lapTime)}`);
-              updateTimeTrialGhostList();
-              
-            } catch (error) {
-              alert('Error reading time trial file: ' + error.message);
-            }
-          };
-          reader.readAsText(file);
-        };
-        input.click();
-      }
-      
-      function removeTimeTrialGhost(index) {
-        if (index >= 0 && index < timeTrialGhosts.length) {
-          timeTrialGhosts.splice(index, 1);
-          updateTimeTrialGhostList();
-        }
-      }
-      
-      function clearAllTimeTrialGhosts() {
-        timeTrialGhosts.length = 0;
-        updateTimeTrialGhostList();
-      }
-
-      // GhostCar class for time trial mode
-      class GhostCar {
-        constructor(ghostData, playerName, lapTime) {
-          this.ghostData = ghostData;
-          this.playerName = playerName;
-          this.lapTime = lapTime;
-          this.currentFrame = 0;
-          this.isActive = true;
-          this.x = 0;
-          this.y = 0;
-          this.angle = 0;
-          this.startTime = null;
-        }
-
-        reset() {
-          this.currentFrame = 0;
-          this.startTime = null;
-          this.isActive = true;
-        }
-
-        update() {
-          if (!this.isActive || !this.ghostData || this.ghostData.length === 0) return;
-
-          if (!this.startTime && gameRunning) {
-            this.startTime = Date.now();
-          }
-
-          if (this.startTime) {
-            const elapsedTime = Date.now() - this.startTime;
-            
-            // Find the appropriate frame based on elapsed time
-            let targetFrame = 0;
-            for (let i = 0; i < this.ghostData.length; i++) {
-              const frameTime = this.ghostData[i].timestamp - this.ghostData[0].timestamp;
-              if (frameTime <= elapsedTime) {
-                targetFrame = i;
-              } else {
-                break;
-              }
-            }
-
-            if (targetFrame < this.ghostData.length) {
-              this.currentFrame = targetFrame;
-              const frame = this.ghostData[targetFrame];
-              this.x = frame.x;
-              this.y = frame.y;
-              this.angle = frame.angle;
-            } else {
-              // Ghost has finished, make it inactive
-              this.isActive = false;
-            }
-          }
-        }
-      }
-
       // Show time trial complete screen
       function showTimeTrialComplete(lapData, previousBestTime) {
         gameRunning = false;
@@ -5060,70 +4842,6 @@
         });
         
         listElement.innerHTML = html;
-      }
-
-      // Draw ghost car
-      function drawGhostCar(ghost) {
-        if (!ghost.isActive) return;
-
-        ctx.save();
-        ctx.globalAlpha = 0.4; // Make ghost translucent
-        
-        // Position and orient the ghost car
-        ctx.translate(ghost.x, ghost.y);
-        ctx.rotate(ghost.angle);
-
-        // Draw a simplified ghost car
-        const width = 20;
-        const height = 10;
-
-        // Ghost car body
-        ctx.fillStyle = "rgba(100, 150, 255, 0.6)";
-        ctx.beginPath();
-        ctx.moveTo(width / 2, 0);
-        ctx.quadraticCurveTo(width / 3, -height / 2, -width / 3, -height / 2);
-        ctx.quadraticCurveTo(-width / 2, 0, -width / 3, height / 2);
-        ctx.quadraticCurveTo(width / 3, height / 2, width / 2, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        // Ghost car outline
-        ctx.strokeStyle = "rgba(150, 200, 255, 0.8)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.restore();
-      }
-
-      // Update time trial ghost list in UI
-      function updateTimeTrialGhostList() {
-        const list = document.getElementById("timeTrialGhostList");
-        if (!list) return;
-        
-        list.innerHTML = "";
-        
-        if (timeTrialGhosts.length === 0) {
-          const emptyDiv = document.createElement("div");
-          emptyDiv.className = "ghost-list-empty";
-          emptyDiv.textContent = "No ghost cars loaded. Import ghosts or complete a lap to start racing against them!";
-          list.appendChild(emptyDiv);
-        } else {
-          timeTrialGhosts.forEach((ghost, index) => {
-            const div = document.createElement("div");
-            div.className = "ghost-entry";
-            
-            const minutes = Math.floor(ghost.lapTime / 60);
-            const seconds = (ghost.lapTime % 60).toFixed(3);
-            
-            div.innerHTML = `
-              <span>${ghost.playerName}</span>
-              <span>${minutes}:${seconds.padStart(6, "0")}</span>
-              <button onclick="removeTimeTrialGhost(${index})">Remove</button>
-            `;
-            
-            list.appendChild(div);
-          });
-        }
       }
 
       function calculateCurrentSpeed() {
@@ -8033,9 +7751,8 @@
           // Update player car physics and input handling
           updatePlayer();
 
-          // Update AI cars or ghost cars depending on mode
+          // Update AI cars depending on mode
           if (isTimeTrialMode) {
-            updateTimeTrialGhosts();
             // Update position display to show best times in time trial mode
             updatePositionDisplay([]);
           } else {
@@ -8071,10 +7788,7 @@
         drawFlames(); // Nitro flame effects (drawn behind cars)
 
         // Render all cars with current positions and rotations
-        if (isTimeTrialMode) {
-          // Render ghost cars first (behind player)
-          timeTrialGhosts.forEach(drawGhostCar);
-        } else {
+        if (!isTimeTrialMode) {
           // Render AI cars in regular race mode
           aiCars.forEach(drawCar);
         }
@@ -8203,14 +7917,6 @@
         if (isTimeTrialMode) {
           // Time trial mode
           totalLaps = 1; // Single lap for time trial
-          
-          // Reset ghost cars to start position
-          timeTrialGhosts.forEach(ghost => ghost.reset());
-          
-          // Start recording new ghost data
-          currentGhostRecording = [];
-          isRecordingGhost = true;
-          
           console.log("Time Trial mode started");
         } else {
           // Regular race mode
@@ -8227,18 +7933,7 @@
 
         // Initialize time trial mode if selected
         if (isTimeTrialMode) {
-          isRecordingGhost = true;
-          currentGhostRecording = [];
           totalLaps = 1; // Only one lap for time trial
-          
-          // Reset time trial ghosts for a new attempt
-          timeTrialGhosts.forEach(ghost => {
-            ghost.reset();
-          });
-        } else {
-          isRecordingGhost = false;
-          currentGhostRecording = [];
-          totalLaps = 5; // Full race mode
         }
 
         document.getElementById("raceComplete").style.display = "none";
@@ -8289,9 +7984,6 @@
         
         // Reset time trial data when returning to team selection
         isTimeTrialMode = false;
-        isRecordingGhost = false;
-        currentGhostRecording = [];
-        timeTrialGhosts = [];
         bestTimeTrialLap = null;
         updateModeUI();
       }
