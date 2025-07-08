@@ -7,8 +7,8 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "Open Racing Game in Chrome",
-      "file": "${workspaceFolder}/Racing Game.html",
+      "name": "Open Game in Chrome",
+      "file": "${workspaceFolder}/Eoin'sRacingGame.html",
       "webRoot": "${workspaceFolder}"
     },
     {
