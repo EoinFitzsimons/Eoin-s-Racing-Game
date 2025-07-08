@@ -434,6 +434,10 @@
         display: block;
         text-align: center;
         line-height: 1.2;
+        min-width: 200px;
+        min-height: 50px;
+        flex-shrink: 0;
+        white-space: nowrap;
       }
 
       .professional-btn::before {
@@ -567,8 +571,11 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         z-index: 100;
+        padding: 1rem 2rem;
+        box-sizing: border-box;
+        overflow-y: auto;
       }
 
       .title {
@@ -845,6 +852,88 @@
 
       .ghost-entry button:hover {
         background-color: rgba(255, 0, 0, 0.8);
+      }
+
+      /* Responsive layout improvements for start screen */
+      @media (max-height: 900px) {
+        .start-screen {
+          padding: 0.5rem 1.5rem;
+        }
+        
+        .start-screen h1.title {
+          font-size: 2.4rem;
+          margin-bottom: 0.3rem;
+        }
+        
+        .start-screen > p {
+          margin-bottom: 0.8rem !important;
+          font-size: 1.2rem;
+        }
+        
+        .mode-selector {
+          margin: 0.8rem 0 1rem 0;
+        }
+        
+        .start-instructions,
+        .difficulty-selector,
+        .weather-selector,
+        .time-trial-section {
+          margin: 0.8rem 0;
+          padding: 0.8rem;
+        }
+        
+        .professional-btn {
+          margin: 1rem auto 0.8rem auto;
+          padding: 0.7rem 1.8rem;
+          font-size: 0.95rem;
+        }
+        
+        .time-trial-instructions {
+          padding: 0.8rem;
+          margin: 0.8rem 0;
+        }
+        
+        .time-trial-instructions ul {
+          padding-left: 1.5rem;
+          margin: 0.5rem 0;
+          list-style-position: inside;
+        }
+        
+        .time-trial-instructions li {
+          margin-bottom: 0.3rem;
+        }
+      }
+
+      @media (max-height: 800px) {
+        .start-screen h1.title {
+          font-size: 2.2rem;
+        }
+        
+        .start-screen > p {
+          font-size: 1.1rem;
+        }
+        
+        .start-instructions h3,
+        .difficulty-selector h3,
+        .weather-selector h3,
+        .time-trial-section h3 {
+          font-size: 1rem;
+          margin-bottom: 0.6rem;
+        }
+        
+        .start-instructions p {
+          font-size: 0.9rem;
+          margin: 0.3rem 0;
+        }
+        
+        .time-trial-instructions {
+          font-size: 0.85rem;
+        }
+      }
+
+      /* Ensure ghost list doesn't get too tall */
+      .ghost-list {
+        max-height: 120px;
       }
 
       /* Weather Description Styles */
@@ -1773,16 +1862,7 @@
 
       <!-- Start/Race Screen -->
       <div class="start-screen" id="startScreen" style="display: none">
-        <h1 class="title">CHAMPIONSHIP READY</h1>
-        <p
-          style="
-            font-size: 1.4rem;
-            margin-bottom: 2rem;
-            color: var(--text-secondary);
-          "
-        >
-          Grand Prix Circuit Challenge
-        </p>
+        <h1 class="title">EOIN'S RACING GAME</h1>
         
         <!-- Game Mode Selector -->
         <div class="mode-selector">
@@ -1799,21 +1879,30 @@
         <!-- Time Trial Controls (hidden by default) -->
         <div id="timeTrialControls" style="display: none;">
           <div class="time-trial-section">
-            <h3>Ghost Cars</h3>
-            <div class="time-trial-buttons">
-              <button class="time-trial-btn" onclick="importTimeTrialLap()">Import Ghost</button>
-              <button class="time-trial-btn" onclick="clearAllTimeTrialGhosts()">Clear All</button>
+            <h3>Ghost Car Management</h3>
+            <div class="time-trial-instructions">
+              <p><strong>How Ghost Cars Work:</strong></p>
+              <p><strong>Recording:</strong> Your fastest lap will be automatically saved as a ghost</p>
+              <p><strong>Import:</strong> Load ghost laps from other players as JSON files</p>
+              <p><strong>Export:</strong> Share your best laps with others after completing a run</p>
+              <p><strong>Racing:</strong> Ghost cars appear as semi-transparent vehicles on track</p>
             </div>
-            <div id="timeTrialGhostList" class="ghost-list"></div>
+            <div class="time-trial-buttons">
+              <button class="time-trial-btn primary" onclick="importTimeTrialLap()">Import Ghost</button>
+              <button class="time-trial-btn danger" onclick="clearAllTimeTrialGhosts()">Clear All</button>
+            </div>
+            <div id="timeTrialGhostList" class="ghost-list">
+              <div class="ghost-list-empty">No ghost cars loaded. Import ghosts or complete a lap to start racing against them!</div>
+            </div>
           </div>
         </div>
 
-        <div class="start-instructions">
+        <div class="start-instructions" id="raceInstructions">
           <h3>Race Instructions</h3>
           <p><strong>Controls:</strong> WASD or Arrow Keys to drive</p>
           <p><strong>Boost:</strong> SPACE for Nitro</p>
-          <p>
-            <strong>Objective:</strong> Complete 3 laps as fast as possible!
+          <p id="objectiveText">
+            <strong>Objective:</strong> Complete 5 laps as fast as possible!
           </p>
           <p>Beat the competition and set new lap records!</p>
         </div>
@@ -2832,6 +2921,7 @@
         
         const timeTrialControls = document.getElementById('timeTrialControls');
         const difficultySelector = document.querySelector('.difficulty-selector');
+        const objectiveText = document.getElementById('objectiveText');
         
         if (isTimeTrialMode) {
           document.getElementById('timeTrialModeBtn').classList.add('active');
@@ -2842,6 +2932,10 @@
           if (difficultySelector) {
             difficultySelector.style.display = 'none';
           }
+          // Update objective text for time trial
+          if (objectiveText) {
+            objectiveText.innerHTML = '<strong>Objective:</strong> Set the fastest single lap time and race against ghost cars!';
+          }
         } else {
           document.getElementById('raceModeBtn').classList.add('active');
           if (timeTrialControls) {
@@ -2850,6 +2944,10 @@
           // Show difficulty selector in race mode
           if (difficultySelector) {
             difficultySelector.style.display = 'block';
+          }
+          // Update objective text for race mode
+          if (objectiveText) {
+            objectiveText.innerHTML = '<strong>Objective:</strong> Complete 5 laps as fast as possible!';
           }
         }
       }
@@ -4736,20 +4834,28 @@
         
         list.innerHTML = "";
         
-        timeTrialGhosts.forEach((ghost, index) => {
-          const div = document.createElement("div");
-          div.className = "time-trial-ghost-item";
-          
-          const minutes = Math.floor(ghost.lapTime / 60);
-          const seconds = (ghost.lapTime % 60).toFixed(3);
-          
-          div.innerHTML = `
-            <span>${ghost.playerName} - ${minutes}:${seconds.padStart(6, "0")}</span>
-            <button onclick="removeTimeTrialGhost(${index})">Remove</button>
-          `;
-          
-          list.appendChild(div);
-        });
+        if (timeTrialGhosts.length === 0) {
+          const emptyDiv = document.createElement("div");
+          emptyDiv.className = "ghost-list-empty";
+          emptyDiv.textContent = "No ghost cars loaded. Import ghosts or complete a lap to start racing against them!";
+          list.appendChild(emptyDiv);
+        } else {
+          timeTrialGhosts.forEach((ghost, index) => {
+            const div = document.createElement("div");
+            div.className = "ghost-entry";
+            
+            const minutes = Math.floor(ghost.lapTime / 60);
+            const seconds = (ghost.lapTime % 60).toFixed(3);
+            
+            div.innerHTML = `
+              <span>${ghost.playerName}</span>
+              <span>${minutes}:${seconds.padStart(6, "0")}</span>
+              <button onclick="removeTimeTrialGhost(${index})">Remove</button>
+            `;
+            
+            list.appendChild(div);
+          });
+        }
       }
 
       function calculateCurrentSpeed() {
