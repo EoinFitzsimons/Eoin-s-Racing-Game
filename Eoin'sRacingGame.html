@@ -1894,6 +1894,23 @@
         >
           Enter Championship
         </button>
+        
+        <div style="display: flex; justify-content: center; margin-top: 1rem;">
+          <button
+            class="professional-btn"
+            style="font-size: 0.9rem; padding: 0.7rem 1.5rem; min-width: 150px; margin: 0 0.5rem;"
+            onclick="randomizeTeamAttributes()"
+          >
+            Randomize Attributes
+          </button>
+          <button
+            class="professional-btn"
+            style="font-size: 0.9rem; padding: 0.7rem 1.5rem; min-width: 150px; margin: 0 0.5rem;"
+            onclick="resetTeamAttributes()"
+          >
+            Reset Default Attributes
+          </button>
+        </div>
       </div>
 
       <!-- Start/Race Screen -->
@@ -2077,10 +2094,10 @@
               id="tireBar"
               style="
                 height: 100%;
-                background: linear-gradient(90deg, #44ff44, #ffaa44, #ff4444);
+                background: rgb(0, 255, 0);
                 border-radius: 5px;
                 width: 100%;
-                transition: width 0.1s;
+                transition: width 0.2s, background 0.3s;
               "
             ></div>
           </div>
@@ -2828,7 +2845,7 @@
           const handlingMultiplier = (1.0 + (teamData.attributes.handling / 20) * 1.0) * playerMultiplier; // Turn rate scaling
           const brakingMultiplier = (1.0 + (teamData.attributes.braking / 20) * 1.0) * playerMultiplier; // Braking force scaling
           const reliabilityMultiplier = (0.8 + (teamData.attributes.reliability / 20) * 0.4) * playerMultiplier; // Damage resistance (0.8-1.2)
-          const tireMultiplier = (0.8 + (teamData.attributes.tireManagement / 20) * 0.4) * playerMultiplier; // Tire wear reduction (0.8-1.2)
+          const tireMultiplier = (0.6 + (teamData.attributes.tireManagement / 20) * 0.8) * playerMultiplier; // Tire wear reduction (0.6-1.4)
 
           // Apply calculated multipliers to base car performance stats
           player.maxSpeed = player.baseMaxSpeed * speedMultiplier;
@@ -3526,6 +3543,7 @@
         angle: -Math.PI / 2, // Car direction in radians (pointing upward initially)
         velocity: { x: 0, y: -0.1 }, // Current velocity vector with small initial upward motion
         speed: 0, // Magnitude of velocity for display purposes
+        isSliding: false, // Flag to track when car is sliding/drifting
 
         // Base performance stats (before team modifications)
         baseMaxSpeed: 8.0, // Maximum achievable speed
@@ -3838,6 +3856,147 @@
           }, // Total: 60
         },
       ];
+
+      // Save original team attributes for reset functionality
+      const originalTeamAttributes = aiTeams.map(team => ({ 
+        name: team.name, 
+        attributes: { ...team.attributes } 
+      }));
+
+      // Randomize team attributes while keeping a balanced but unique distribution
+      function randomizeTeamAttributes() {
+        // Generate random but balanced attributes for each team
+        aiTeams.forEach(team => {
+          // Create a total attribute budget for this team (60-70 points)
+          const totalBudget = 60 + Math.floor(Math.random() * 10);
+          
+          // Reset attributes to calculate from scratch
+          const attributes = {
+            speed: 0,
+            acceleration: 0,
+            handling: 0,
+            braking: 0,
+            reliability: 0,
+            tireManagement: 0
+          };
+          
+          // Ensure each attribute gets at least 4 points as a base value
+          Object.keys(attributes).forEach(attr => {
+            attributes[attr] = 4;
+          });
+          
+          // Remaining points to distribute (after allocating base values)
+          let remainingPoints = totalBudget - 24; // 24 = 6 attributes * 4 base points
+          
+          // Define team's specialization (1-3 attributes that get bonus points)
+          const specializations = [];
+          const attributeKeys = Object.keys(attributes);
+          
+          // Select 1-3 specializations randomly
+          const specializationCount = 1 + Math.floor(Math.random() * 3);
+          
+          for (let i = 0; i < specializationCount; i++) {
+            const randomIndex = Math.floor(Math.random() * attributeKeys.length);
+            const attribute = attributeKeys[randomIndex];
+            
+            if (!specializations.includes(attribute)) {
+              specializations.push(attribute);
+            }
+            
+            // Remove the attribute to prevent duplicates
+            attributeKeys.splice(randomIndex, 1);
+            
+            if (attributeKeys.length === 0) break;
+          }
+          
+          // Give bonus points to specializations (60% of remaining points)
+          const specializationPoints = Math.floor(remainingPoints * 0.6);
+          let bonusPointsRemaining = specializationPoints;
+          
+          // First pass: calculate how many points can be assigned to each specialization without exceeding 20
+          const maxPointsPerSpecialization = {};
+          specializations.forEach(attr => {
+            maxPointsPerSpecialization[attr] = 20 - attributes[attr]; // Max points this attribute can accept
+          });
+          
+          // Second pass: distribute points respecting the 20-point maximum
+          specializations.forEach(attr => {
+            // Calculate fair share based on remaining points and specializations
+            const fairShare = Math.floor(bonusPointsRemaining / specializations.length);
+            // Calculate how many points to actually add (either fair share or max possible)
+            const pointsToAdd = Math.min(fairShare, maxPointsPerSpecialization[attr]);
+            
+            attributes[attr] += pointsToAdd;
+            bonusPointsRemaining -= pointsToAdd;
+            remainingPoints -= pointsToAdd;
+          });
+          
+          // If we have leftover specialization points that couldn't be distributed,
+          // add them back to the remaining points pool for random distribution
+          if (bonusPointsRemaining > 0) {
+            remainingPoints += bonusPointsRemaining;
+          }
+          
+          // Distribute remaining points randomly
+          while (remainingPoints > 0) {
+            const randomAttr = Object.keys(attributes)[Math.floor(Math.random() * 6)];
+            
+            // Cap each attribute at 20
+            if (attributes[randomAttr] < 20) {
+              attributes[randomAttr]++;
+              remainingPoints--;
+            } else {
+              // If this attribute is already at max, find another attribute that isn't maxed out
+              const availableAttributes = Object.keys(attributes).filter(attr => attributes[attr] < 20);
+              
+              // If no attributes are below max, break the loop (rare edge case)
+              if (availableAttributes.length === 0) break;
+              
+              // Pick a random attribute that isn't maxed and increment it
+              const alternateAttr = availableAttributes[Math.floor(Math.random() * availableAttributes.length)];
+              attributes[alternateAttr]++;
+              remainingPoints--;
+            }
+          }
+          
+          // Final check to ensure no attribute exceeds 20
+          Object.keys(attributes).forEach(attr => {
+            if (attributes[attr] > 20) {
+              const excess = attributes[attr] - 20;
+              attributes[attr] = 20;
+              // Redistribute excess points to attributes below max
+              let redistributed = 0;
+              while (redistributed < excess) {
+                const availableAttributes = Object.keys(attributes).filter(a => attributes[a] < 20);
+                if (availableAttributes.length === 0) break;
+                
+                const randomAttr = availableAttributes[Math.floor(Math.random() * availableAttributes.length)];
+                attributes[randomAttr]++;
+                redistributed++;
+              }
+            }
+          });
+          
+          // Apply the new attributes
+          team.attributes = attributes;
+        });
+        
+        // Update display
+        populateTeamAttributes();
+      }
+      
+      // Reset team attributes to their original values
+      function resetTeamAttributes() {
+        originalTeamAttributes.forEach(originalTeam => {
+          const team = aiTeams.find(t => t.name === originalTeam.name);
+          if (team) {
+            team.attributes = { ...originalTeam.attributes };
+          }
+        });
+        
+        // Update display
+        populateTeamAttributes();
+      }
 
       // Visual effects
       const tireMarks = [];
@@ -4555,7 +4714,7 @@
           const handlingMultiplier = (1.0 + (team.attributes.handling / 20) * 1.0) * difficultyMultiplier;
           const brakingMultiplier = (1.0 + (team.attributes.braking / 20) * 1.0) * difficultyMultiplier;
           const reliabilityMultiplier = (0.8 + (team.attributes.reliability / 20) * 0.4) * difficultyMultiplier;
-          const tireMultiplier = (0.8 + (team.attributes.tireManagement / 20) * 0.4) * difficultyMultiplier;
+          const tireMultiplier = (0.6 + (team.attributes.tireManagement / 20) * 0.8) * difficultyMultiplier;
 
           const aiCar = {
             x: 1000 + (gridSide === 0 ? -30 : 30), // Grid spacing left/right of centerline
@@ -4563,6 +4722,7 @@
             angle: -Math.PI / 2, // Point upward initially
             velocity: { x: 0, y: -0.1 }, // Small initial velocity pointing upward (negative Y)
             speed: 0.1, // Small initial speed
+            isSliding: false, // Flag to track when car is sliding/drifting
             // Core performance stats affected by team attributes
             maxSpeed: (7.8 + Math.random() * 0.6) * speedMultiplier,
             acceleration: (0.2 + Math.random() * 0.04) * accelMultiplier,
@@ -5140,24 +5300,44 @@
         const speedWearFactor = currentSpeed / player.maxSpeed;
         const inputWearFactor =
           Math.abs(inputs.steering) * 0.5 + Math.abs(inputs.braking) * 0.3;
-
+          
+        // Add random variations to tire wear (more unpredictable)
+        const randomFactor = Math.random() * 0.2; // Random factor between 0-0.2
+        
         player.tireWear = Math.min(
           100,
           player.tireWear +
-            player.tireWearRate * (1 + speedWearFactor + inputWearFactor)
+            player.tireWearRate * (1 + speedWearFactor + inputWearFactor + randomFactor)
         );
       }
 
       function applyFriction(currentSpeed) {
         const baseFriction = 0.985;
-        const tireGripLoss = gameRunning ? player.tireWear / 400 : 0;
+        
+        // Increase the impact of tire wear on grip
+        // Using a progressive function now where higher wear has disproportionately more effect
+        // This means slightly worn tires are still okay but heavily worn tires become dangerous
+        const wearPercentage = player.tireWear / 100;
+        const progressiveWearEffect = wearPercentage * wearPercentage * 1.5; // Square for exponential effect
+        const tireGripLoss = gameRunning ? progressiveWearEffect / 2 : 0; // More significant grip loss
+        
+        // Calculate base friction that applies to all conditions
         const combinedFriction = Math.max(
-          0.975,
+          0.970, // Reduced from 0.975 to make friction more impactful
           baseFriction - currentSpeed * 0.001 - tireGripLoss
         );
-
-        player.velocity.x *= combinedFriction;
-        player.velocity.y *= combinedFriction;
+        
+        // Check if player is sliding (based on sliding detection)
+        if (player.isSliding && player.tireWear > 20) {
+          // When sliding with worn tires, grip loss is even more severe
+          const slidingPenalty = 0.01 + (wearPercentage * 0.02);
+          player.velocity.x *= (combinedFriction - slidingPenalty);
+          player.velocity.y *= (combinedFriction - slidingPenalty);
+        } else {
+          // Normal friction application
+          player.velocity.x *= combinedFriction;
+          player.velocity.y *= combinedFriction;
+        }
       }
 
       function updatePlayerSpeed() {
@@ -5468,12 +5648,15 @@
 
           // Steering wear - sharp turns damage tires more
           const steerWearFactor = Math.abs(steerAmount) * 0.3;
+          
+          // Add random factor for unpredictability
+          const randomFactor = Math.random() * 0.2;
 
           // Apply cumulative tire wear with speed and steering penalties
           ai.tireWear = Math.min(
             100,
             ai.tireWear +
-              ai.tireWearRate * (1 + speedWearFactor + steerWearFactor)
+              ai.tireWearRate * (1 + speedWearFactor + steerWearFactor + randomFactor)
           );
         }
       }
@@ -5487,8 +5670,8 @@
         // Base friction coefficient for natural deceleration
         const personalityFriction = 0.985;
 
-        // Tire wear reduces grip - worn tires slide more
-        const tireGripLoss = gameRunning ? ai.tireWear / 500 : 0;
+        // Tire wear reduces grip - worn tires slide more (increased effect from 500 to 250)
+        const tireGripLoss = gameRunning ? ai.tireWear / 250 : 0;
 
         // Smooth drivers maintain better tire contact and grip
         const smoothnessBonus = ai.behavior.smoothness * 0.005;
@@ -7709,22 +7892,22 @@
         const nitroPercentage = (player.nitro / player.maxNitro) * 100;
         document.getElementById("nitroBar").style.width = `${nitroPercentage}%`;
 
-        // Change nitro bar color based on level using theme colors
-        if (nitroPercentage > 50) {
-          document.getElementById(
-            "nitroBar"
-          ).style.background = `linear-gradient(90deg, var(--primary-color), var(--accent-color))`;
-        } else if (nitroPercentage > 20) {
-          document.getElementById(
-            "nitroBar"
-          ).style.background = `linear-gradient(90deg, var(--accent-color), #ffaa00)`;
-        } else {
-          document.getElementById("nitroBar").style.background = "#ff3333";
-        }
+        // Create a smooth color gradient based on nitro level
+        // From red (0% nitro/empty) to blue (100% nitro/full)
+        const nitroRedComponent = Math.floor((100 - nitroPercentage) / 100 * 255);
+        const nitroBlueComponent = Math.floor(nitroPercentage / 100 * 255);
+        document.getElementById("nitroBar").style.background = `rgb(${nitroRedComponent}, 0, ${nitroBlueComponent})`;
+        
 
         // Update tire wear bar (reverse - starts full, decreases as tires wear)
         const tireCondition = Math.max(0, 100 - player.tireWear);
         document.getElementById("tireBar").style.width = `${tireCondition}%`;
+        
+        // Create a smooth color gradient based on tire condition
+        // From green (100% condition) to red (0% condition)
+        const greenComponent = Math.floor((tireCondition / 100) * 255);
+        const redComponent = Math.floor((1 - tireCondition / 100) * 255);
+        document.getElementById("tireBar").style.background = `rgb(${redComponent}, ${greenComponent}, 0)`;
 
         // Update lap time displays
         if (gameRunning) {
@@ -7786,6 +7969,12 @@
         document.getElementById(
           "damageBar"
         ).style.width = `${damagePercentage}%`;
+        
+        // Create a smooth color gradient based on damage level
+        // From green (0% damage) to red (100% damage)
+        const dmgGreenComponent = Math.floor((100 - damagePercentage) / 100 * 255);
+        const dmgRedComponent = Math.floor(damagePercentage / 100 * 255);
+        document.getElementById("damageBar").style.background = `rgb(${dmgRedComponent}, ${dmgGreenComponent}, 0)`;
 
         if (gameRunning) {
           const elapsed = (Date.now() - raceStartTime) / 1000;
@@ -8099,6 +8288,18 @@
           "var(--accent-color)";
         document.getElementById("newRecordText").style.display = "none";
         document.getElementById("nameInputModal").style.display = "none";
+        
+        // Initialize tire bar to full and green
+        document.getElementById("tireBar").style.width = "100%";
+        document.getElementById("tireBar").style.background = "rgb(0, 255, 0)";
+        
+        // Initialize damage bar to empty and green
+        document.getElementById("damageBar").style.width = "0%";
+        document.getElementById("damageBar").style.background = "rgb(0, 255, 0)";
+        
+        // Initialize nitro bar to full and blue
+        document.getElementById("nitroBar").style.width = "100%";
+        document.getElementById("nitroBar").style.background = "rgb(0, 0, 255)";
 
         // Reset player to pole position (front of grid)
         player.x = 1000; // Center of track
@@ -8114,6 +8315,8 @@
         player.gridPosition = 0; // Player starts at pole position (first in grid)
         player.nitro = player.maxNitro; // Reset nitro to full
         player.usingNitro = false;
+        player.isSliding = false; // Reset sliding flag
+        player.tireWear = 0; // Reset tire wear
 
         // Initialize camera to player's starting position
         camera.x = player.x - canvas.width / 2;
