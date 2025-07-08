@@ -801,11 +801,49 @@
         border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s ease;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 100px;
       }
 
       .time-trial-btn:hover {
         background-color: var(--accent-color);
         border-color: var(--accent-color);
+        transform: translateY(-1px);
+      }
+
+      .time-trial-btn.primary {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+      }
+
+      .time-trial-btn.primary:hover {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      .time-trial-btn.secondary {
+        background: rgba(108, 117, 125, 0.8);
+        border-color: #6c757d;
+        color: white;
+      }
+
+      .time-trial-btn.secondary:hover {
+        background: #6c757d;
+        border-color: #6c757d;
+      }
+
+      .time-trial-btn.danger {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+      }
+
+      .time-trial-btn.danger:hover {
+        background: #c82333;
+        border-color: #c82333;
       }
 
       .ghost-list {
@@ -986,7 +1024,7 @@
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         font-family: "Arial", "Helvetica", sans-serif;
         font-weight: 500;
-        width: 220px;
+        width: 260px;
         overflow: visible;
       }
 
@@ -1895,6 +1933,21 @@
               <div class="ghost-list-empty">No ghost cars loaded. Import ghosts or complete a lap to start racing against them!</div>
             </div>
           </div>
+          
+          <!-- Time Trial Leaderboard -->
+          <div class="time-trial-leaderboard">
+            <h3>Time Trial Leaderboard</h3>
+            <div class="time-trial-leaderboard-list" id="timeTrialLeaderboardList">
+              <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
+                Complete a time trial to see your best times here!
+              </div>
+            </div>
+            <div class="time-trial-buttons" style="margin-top: 1rem;">
+              <button class="time-trial-btn secondary" onclick="clearTimeTrialLeaderboard()">Clear Records</button>
+              <button class="time-trial-btn primary" onclick="exportTimeTrialLeaderboard()">Export Records</button>
+              <button class="time-trial-btn primary" onclick="importTimeTrialLeaderboard()">Import Records</button>
+            </div>
+          </div>
         </div>
 
         <div class="start-instructions" id="raceInstructions">
@@ -2274,6 +2327,17 @@
             margin: 1rem 0;
           "
         ></p>
+
+        <!-- Time Trial Leaderboard in Complete Screen -->
+        <div class="time-trial-leaderboard" style="max-height: 250px; margin: 1rem 0;">
+          <h3>Best Times</h3>
+          <div class="time-trial-leaderboard-list" id="timeTrialCompleteLeaderboard" style="max-height: 180px;">
+          </div>
+        </div>
+
+        <div class="time-trial-buttons" style="margin: 1rem 0; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+          <button class="time-trial-btn primary" onclick="exportTimeTrialLap(bestTimeTrialLap)">Export Best Laps</button>
+        </div>
 
         <div
           style="
@@ -2804,6 +2868,9 @@
         
         // Initialize mode UI (race mode by default)
         updateModeUI();
+        
+        // Initialize time trial leaderboard display
+        updateTimeTrialLeaderboardDisplay();
       });
 
       // Leaderboard system
@@ -2851,6 +2918,154 @@
       function skipLeaderboard() {
         document.getElementById("nameInputModal").style.display = "none";
         document.getElementById("raceComplete").style.display = "block";
+      }
+      
+      // Time Trial Leaderboard system
+      let timeTrialLeaderboard = JSON.parse(
+        localStorage.getItem("circuitRacerTimeTrialLeaderboard") || "[]"
+      );
+
+      function saveTimeTrialRecord(lapData) {
+        // Create leaderboard entry
+        const entry = {
+          name: lapData.playerName,
+          teamName: lapData.teamName,
+          time: lapData.lapTime,
+          weather: lapData.weather,
+          difficulty: lapData.difficulty,
+          date: new Date().toLocaleDateString(),
+          track: lapData.track || "Circuit Racer Track"
+        };
+
+        // Add to time trial leaderboard
+        timeTrialLeaderboard.push(entry);
+        
+        // Sort by best time (fastest first)
+        timeTrialLeaderboard.sort((a, b) => a.time - b.time);
+        
+        // Keep top 20 records
+        timeTrialLeaderboard = timeTrialLeaderboard.slice(0, 20);
+
+        // Save to localStorage
+        localStorage.setItem(
+          "circuitRacerTimeTrialLeaderboard",
+          JSON.stringify(timeTrialLeaderboard)
+        );
+        
+        // Update display
+        updateTimeTrialLeaderboardDisplay();
+      }
+
+      function updateTimeTrialLeaderboardDisplay() {
+        const listElement = document.getElementById("timeTrialLeaderboardList");
+        
+        if (timeTrialLeaderboard.length === 0) {
+          listElement.innerHTML = `
+            <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
+              Complete a time trial to see your best times here!
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        timeTrialLeaderboard.forEach((entry, index) => {
+          const minutes = Math.floor(entry.time / 60);
+          const seconds = (entry.time % 60).toFixed(3);
+          const timeString = `${minutes}:${seconds.padStart(6, "0")}`;
+          
+          // Check if this is a personal best (same name)
+          const isPersonalBest = entry.name === (selectedTeam ? getSelectedTeamName() : "Player");
+          
+          html += `
+            <div class="time-trial-entry ${isPersonalBest ? 'personal-best' : ''}">
+              <span class="time-trial-rank">${index + 1}</span>
+              <span class="time-trial-name">${entry.name}</span>
+              <span class="time-trial-team">${entry.teamName ? entry.teamName.substring(0, 3).toUpperCase() : 'N/A'}</span>
+              <span class="time-trial-time">${timeString}</span>
+            </div>
+          `;
+        });
+        
+        listElement.innerHTML = html;
+      }
+
+      function clearTimeTrialLeaderboard() {
+        if (confirm("Are you sure you want to clear all time trial records? This cannot be undone.")) {
+          timeTrialLeaderboard = [];
+          localStorage.removeItem("circuitRacerTimeTrialLeaderboard");
+          updateTimeTrialLeaderboardDisplay();
+        }
+      }
+
+      function exportTimeTrialLeaderboard() {
+        if (timeTrialLeaderboard.length === 0) {
+          alert("No time trial records to export!");
+          return;
+        }
+
+        const exportData = {
+          version: "1.0",
+          type: "time-trial-leaderboard",
+          records: timeTrialLeaderboard,
+          exportDate: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `time-trial-leaderboard-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+      }
+
+      function importTimeTrialLeaderboard() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const importData = JSON.parse(e.target.result);
+              
+              // Validate imported data
+              if (!importData.records || !Array.isArray(importData.records)) {
+                alert('Invalid time trial leaderboard file format!');
+                return;
+              }
+              
+              // Merge with existing records
+              const newRecords = importData.records.filter(record => 
+                record.name && record.time && typeof record.time === 'number'
+              );
+              
+              timeTrialLeaderboard = [...timeTrialLeaderboard, ...newRecords];
+              
+              // Sort and keep top 20
+              timeTrialLeaderboard.sort((a, b) => a.time - b.time);
+              timeTrialLeaderboard = timeTrialLeaderboard.slice(0, 20);
+              
+              // Save and update display
+              localStorage.setItem(
+                "circuitRacerTimeTrialLeaderboard",
+                JSON.stringify(timeTrialLeaderboard)
+              );
+              updateTimeTrialLeaderboardDisplay();
+              
+              alert(`Successfully imported ${newRecords.length} time trial records!`);
+              
+            } catch (error) {
+              alert('Error reading time trial leaderboard file: ' + error.message);
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
       }
       
       // Difficulty selection functionality
@@ -2936,6 +3151,8 @@
           if (objectiveText) {
             objectiveText.innerHTML = '<strong>Objective:</strong> Set the fastest single lap time and race against ghost cars!';
           }
+          // Update position display to show time trial best times
+          updatePositionDisplay([]);
         } else {
           document.getElementById('raceModeBtn').classList.add('active');
           if (timeTrialControls) {
@@ -2949,6 +3166,8 @@
           if (objectiveText) {
             objectiveText.innerHTML = '<strong>Objective:</strong> Complete 5 laps as fast as possible!';
           }
+          // Reset position display for race mode
+          updatePositionDisplay([]);
         }
       }
 
@@ -4599,7 +4818,7 @@
         
         // Create lap data object
         const lapData = {
-          playerName: selectedTeam || "Player",
+          playerName: getSelectedTeamName(),
           teamName: getSelectedTeamName(),
           lapTime: lapTime,
           ghostData: [...currentGhostRecording],
@@ -4612,13 +4831,22 @@
         // Add to time trial laps
         timeTrialLaps.push(lapData);
         
+        // Get the current best time from the leaderboard (not just session best)
+        const currentBestTime = timeTrialLeaderboard.length > 0 ? timeTrialLeaderboard[0].time : null;
+        
+        // Store previous best time before updating
+        const previousBestTime = bestTimeTrialLap ? bestTimeTrialLap.lapTime : null;
+        
         // Update best lap if this is better
         if (!bestTimeTrialLap || lapTime < bestTimeTrialLap.lapTime) {
           bestTimeTrialLap = lapData;
         }
         
-        // Show time trial complete screen
-        showTimeTrialComplete(lapData);
+        // Save to time trial leaderboard
+        saveTimeTrialRecord(lapData);
+        
+        // Show time trial complete screen - use leaderboard best for comparison
+        showTimeTrialComplete(lapData, currentBestTime);
       }
       
       function getSelectedTeamName() {
@@ -4768,7 +4996,7 @@
       }
 
       // Show time trial complete screen
-      function showTimeTrialComplete(lapData) {
+      function showTimeTrialComplete(lapData, previousBestTime) {
         gameRunning = false;
         
         // Display lap time
@@ -4777,21 +5005,61 @@
         document.getElementById("timeTrialLapTime").textContent = `${minutes}:${seconds.padStart(6, "0")}`;
         
         // Check if this is a new best lap
-        const isNewBest = !bestTimeTrialLap || lapData.lapTime < bestTimeTrialLap.lapTime;
+        const isNewBest = previousBestTime === null || lapData.lapTime < previousBestTime;
         
         if (isNewBest) {
           document.getElementById("timeTrialResult").textContent = "NEW BEST LAP!";
           document.getElementById("timeTrialResult").style.color = "var(--accent-color)";
         } else {
-          const improvement = lapData.lapTime - bestTimeTrialLap.lapTime;
+          const improvement = lapData.lapTime - previousBestTime;
           const impMinutes = Math.floor(Math.abs(improvement) / 60);
           const impSeconds = (Math.abs(improvement) % 60).toFixed(3);
           document.getElementById("timeTrialResult").textContent = `+${impMinutes}:${impSeconds.padStart(6, "0")} from best`;
           document.getElementById("timeTrialResult").style.color = "var(--text-secondary)";
         }
         
+        // Update the complete screen leaderboard
+        updateTimeTrialCompleteLeaderboard();
+        
         // Show the complete screen
         document.getElementById("timeTrialComplete").style.display = "block";
+      }
+
+      function updateTimeTrialCompleteLeaderboard() {
+        const listElement = document.getElementById("timeTrialCompleteLeaderboard");
+        
+        if (timeTrialLeaderboard.length === 0) {
+          listElement.innerHTML = `
+            <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
+              No records yet
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        // Show top 5 records in the complete screen
+        const topRecords = timeTrialLeaderboard.slice(0, 5);
+        
+        topRecords.forEach((entry, index) => {
+          const minutes = Math.floor(entry.time / 60);
+          const seconds = (entry.time % 60).toFixed(3);
+          const timeString = `${minutes}:${seconds.padStart(6, "0")}`;
+          
+          // Check if this is a personal best (same name)
+          const isPersonalBest = entry.name === (selectedTeam ? getSelectedTeamName() : "Player");
+          
+          html += `
+            <div class="time-trial-entry ${isPersonalBest ? 'personal-best' : ''}">
+              <span class="time-trial-rank">${index + 1}</span>
+              <span class="time-trial-name">${entry.name}</span>
+              <span class="time-trial-team">${entry.teamName ? entry.teamName.substring(0, 3).toUpperCase() : 'N/A'}</span>
+              <span class="time-trial-time">${timeString}</span>
+            </div>
+          `;
+        });
+        
+        listElement.innerHTML = html;
       }
 
       // Draw ghost car
@@ -5919,13 +6187,83 @@
         const positionList = document.getElementById("positionList");
         positionList.innerHTML = "";
 
-        // Use finalRaceStandings instead of allCars if race is complete
-        const carsToDisplay = raceComplete ? finalRaceStandings : allCars;
+        // In time trial mode, show best times instead of race positions
+        if (isTimeTrialMode) {
+          // Update the title to reflect time trial content
+          const standingsTitle = document.querySelector('.position-display div');
+          if (standingsTitle) {
+            standingsTitle.textContent = 'BEST TIMES';
+          }
+          
+          // Show top 5 time trial records
+          const topRecords = timeTrialLeaderboard.slice(0, 5);
+          
+          if (topRecords.length === 0) {
+            const emptyItem = document.createElement("div");
+            emptyItem.className = "position-item";
+            emptyItem.style.textAlign = "center";
+            emptyItem.style.color = "var(--text-secondary)";
+            emptyItem.innerHTML = "Complete a lap to see times here!";
+            positionList.appendChild(emptyItem);
+            return;
+          }
+          
+          topRecords.forEach((record, index) => {
+            const positionItem = createTimeTrialDisplayItem(record, index);
+            positionList.appendChild(positionItem);
+          });
+        } else {
+          // Update the title back to standings for race mode
+          const standingsTitle = document.querySelector('.position-display div');
+          if (standingsTitle) {
+            standingsTitle.textContent = 'STANDINGS';
+          }
+          
+          // Use finalRaceStandings instead of allCars if race is complete
+          const carsToDisplay = raceComplete ? finalRaceStandings : allCars;
 
-        carsToDisplay.forEach((car, index) => {
-          const positionItem = createPositionDisplayItem(car, index, carsToDisplay);
-          positionList.appendChild(positionItem);
-        });
+          carsToDisplay.forEach((car, index) => {
+            const positionItem = createPositionDisplayItem(car, index, carsToDisplay);
+            positionList.appendChild(positionItem);
+          });
+        }
+      }
+
+      function createTimeTrialDisplayItem(record, index) {
+        const div = document.createElement("div");
+        div.className = "position-item";
+        
+        // Check if this is the current player's record
+        const isCurrentPlayer = record.name === getSelectedTeamName();
+        if (isCurrentPlayer) {
+          div.className += " player-pos";
+        }
+
+        const position = index + 1;
+        
+        // Format lap time
+        const minutes = Math.floor(record.time / 60);
+        const seconds = (record.time % 60).toFixed(3);
+        const timeDisplay = `${minutes}:${seconds.padStart(6, "0")}`;
+        
+        // Get team code (3 letters)
+        const teamCode = record.teamName ? record.teamName.substring(0, 3).toUpperCase() : 'N/A';
+        
+        // Format date
+        const dateDisplay = record.date;
+        
+        const nameColor = isCurrentPlayer ? "var(--primary-color)" : "#ffffff";
+
+        // Format: position  team-code  player-name  lap-time  date
+        div.innerHTML = `
+          <span style="color: #cccccc; font-weight: 600; width: 18px; display: inline-block;">${position}</span>
+          <span style="color: var(--accent-color); font-weight: 400; width: 30px; display: inline-block; font-size: 0.8em;">${teamCode}</span>
+          <span style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${record.name}</span>
+          <span style="color: var(--accent-color); width: 60px; display: inline-block; font-family: monospace;">${timeDisplay}</span>
+          <span style="color: #888; width: 70px; display: inline-block; font-size: 0.75em;">${dateDisplay}</span>
+        `;
+
+        return div;
       }
 
       function createPositionDisplayItem(car, index, allCars) {
@@ -7698,6 +8036,8 @@
           // Update AI cars or ghost cars depending on mode
           if (isTimeTrialMode) {
             updateTimeTrialGhosts();
+            // Update position display to show best times in time trial mode
+            updatePositionDisplay([]);
           } else {
             // Update all AI cars (movement, decision-making, pathfinding)
             updateAI();
@@ -7885,6 +8225,22 @@
           initializeRainParticles();
         }
 
+        // Initialize time trial mode if selected
+        if (isTimeTrialMode) {
+          isRecordingGhost = true;
+          currentGhostRecording = [];
+          totalLaps = 1; // Only one lap for time trial
+          
+          // Reset time trial ghosts for a new attempt
+          timeTrialGhosts.forEach(ghost => {
+            ghost.reset();
+          });
+        } else {
+          isRecordingGhost = false;
+          currentGhostRecording = [];
+          totalLaps = 5; // Full race mode
+        }
+
         document.getElementById("raceComplete").style.display = "none";
         document.getElementById("timeTrialComplete").style.display = "none";
       }
@@ -7920,6 +8276,7 @@
         document.querySelector(".leaderboard").style.display = "none";
 
         document.getElementById("raceComplete").style.display = "none";
+        document.getElementById("timeTrialComplete").style.display = "none";
         document.getElementById("startScreen").style.display = "none";
         document.getElementById("teamSelectionScreen").style.display = "flex";
 
@@ -7929,11 +8286,15 @@
           card.classList.remove("selected");
         });
         document.getElementById("proceedToRaceBtn").disabled = true;
+        
+        // Reset time trial data when returning to team selection
+        isTimeTrialMode = false;
+        isRecordingGhost = false;
+        currentGhostRecording = [];
+        timeTrialGhosts = [];
+        bestTimeTrialLap = null;
+        updateModeUI();
       }
-
-      // Clear leaderboard records on game load (optional - remove this line if you want to keep records)
-      localStorage.removeItem("circuitRacerLeaderboard");
-      leaderboard = [];
 
       // Initialize and start game loop
       updateLeaderboardDisplay(); // Load leaderboard on page start
