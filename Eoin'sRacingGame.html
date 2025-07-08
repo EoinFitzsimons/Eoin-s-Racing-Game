@@ -124,6 +124,7 @@
         padding: 1.2rem 1rem;
         cursor: pointer;
         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        color: var(--text-primary, #ffffff);
 
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
@@ -145,6 +146,12 @@
         border-color: var(--primary-color);
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3),
           0 0 0 2px var(--primary-color);
+        background: linear-gradient(
+          145deg,
+          var(--primary-color-transparent, rgba(var(--primary-color-rgb), 0.15)),
+          var(--accent-color-transparent, rgba(var(--accent-color-rgb), 0.1))
+        );
+        color: var(--text-primary, #ffffff);
       }
 
       .team-card.prev {
@@ -197,11 +204,12 @@
         border-color: var(--primary-color);
         background: linear-gradient(
           145deg,
-          var(--border-glow),
-          rgba(255, 255, 255, 0.05)
+          var(--primary-color-transparent, rgba(var(--primary-color-rgb), 0.2)),
+          var(--accent-color-transparent, rgba(var(--accent-color-rgb), 0.15))
         );
         transform: translateY(-4px);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        color: var(--text-primary, #ffffff);
       }
 
       .team-card.selected::before {
@@ -351,7 +359,7 @@
 
       .attribute-fill {
         height: 100%;
-        background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
         border-radius: 2px;
         transition: width 0.3s ease;
       }
@@ -2292,165 +2300,229 @@
     <script>
       // Team themes configuration with high contrast
       const teamThemes = {
-        // Croatian Team - Red, White, Blue
+        // Croatian Team - Tangerine Tango with Azure accents
         adriatic_racing: {
-          "--primary-color": "#FF0000",
+          "--primary-color": "#FF8C42",
+          "--primary-color-rgb": "255, 140, 66",
           "--accent-color": "#0066CC",
+          "--accent-color-rgb": "0, 102, 204",
+          "--primary-color-transparent": "rgba(255, 140, 66, 0.15)",
+          "--accent-color-transparent": "rgba(0, 102, 204, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(255, 0, 0, 0.4)",
+          "--text-secondary": "#ffcc88",
+          "--border-glow": "rgba(255, 140, 66, 0.4)",
         },
-        // English Team - Dark Blue and Silver
+        // English Team - Midnight Blue with Silver accents
         britannia_motors: {
           "--primary-color": "#191970",
+          "--primary-color-rgb": "25, 25, 112",
           "--accent-color": "#C0C0C0",
+          "--accent-color-rgb": "192, 192, 192",
+          "--primary-color-transparent": "rgba(25, 25, 112, 0.15)",
+          "--accent-color-transparent": "rgba(192, 192, 192, 0.1)",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#aaaaff",
           "--border-glow": "rgba(25, 25, 112, 0.4)",
         },
-        // Chinese Team - Gold and Black
+        // Chinese Team - Celadon with Gold accents
         celestial_motors: {
-          "--primary-color": "#FFD700",
-          "--accent-color": "#FFFFFF",
-          "--bg-primary": "#1a1a0a",
+          "--primary-color": "#2fa889",
+          "--primary-color-rgb": "47, 168, 137",
+          "--accent-color": "#FFDF00",
+          "--accent-color-rgb": "255, 223, 0",
+          "--primary-color-transparent": "rgba(47, 168, 137, 0.15)",
+          "--accent-color-transparent": "rgba(255, 223, 0, 0.1)",
+          "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#ffcc88",
-          "--border-glow": "rgba(255, 215, 0, 0.4)",
+          "--text-secondary": "#88ffcc",
+          "--border-glow": "rgba(47, 168, 137, 0.4)",
         },
-        // Welsh Team - Red and Gold
+        // Welsh Team - Burgundy with Gold accents
         dragon_force: {
-          "--primary-color": "#DC143C",
+          "--primary-color": "#8e2043",
+          "--primary-color-rgb": "142, 32, 67",
           "--accent-color": "#FFD700",
+          "--accent-color-rgb": "255, 215, 0",
+          "--primary-color-transparent": "rgba(142, 32, 67, 0.15)",
+          "--accent-color-transparent": "rgba(255, 215, 0, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(220, 20, 60, 0.4)",
+          "--border-glow": "rgba(142, 32, 67, 0.4)",
         },
-        // Irish Team - Green and Orange
+        // Irish Team - Shamrock with Amber accents
         emerald_isle: {
-          "--primary-color": "#228B22",
+          "--primary-color": "#169873",
+          "--primary-color-rgb": "22, 152, 115",
           "--accent-color": "#FF8C00",
+          "--accent-color-rgb": "255, 140, 0",
+          "--primary-color-transparent": "rgba(22, 152, 115, 0.15)",
+          "--accent-color-transparent": "rgba(255, 140, 0, 0.1)",
           "--bg-primary": "#0a1a0a",
           "--bg-secondary": "#1a2a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88ff88",
-          "--border-glow": "rgba(34, 139, 34, 0.4)",
+          "--border-glow": "rgba(22, 152, 115, 0.4)",
         },
-        // Scottish Team - Blue and White
+        // Scottish Team - Sapphire with White accents
         highland_racing: {
-          "--primary-color": "#003DA5",
+          "--primary-color": "#0F52BA",
+          "--primary-color-rgb": "15, 82, 186",
           "--accent-color": "#FFFFFF",
+          "--accent-color-rgb": "255, 255, 255",
+          "--primary-color-transparent": "rgba(15, 82, 186, 0.15)",
+          "--accent-color-transparent": "rgba(255, 255, 255, 0.1)",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(0, 61, 165, 0.4)",
+          "--border-glow": "rgba(15, 82, 186, 0.4)",
         },
-        // Spanish Team - Red and Yellow
+        // Spanish Team - Sienna with Amber accents
         iberian_speed: {
-          "--primary-color": "#C60B1E",
+          "--primary-color": "#A0522D",
+          "--primary-color-rgb": "160, 82, 45",
           "--accent-color": "#FFC400",
+          "--accent-color-rgb": "255, 196, 0",
+          "--primary-color-transparent": "rgba(160, 82, 45, 0.15)",
+          "--accent-color-transparent": "rgba(255, 196, 0, 0.1)",
           "--bg-primary": "#0a0a0a",
           "--bg-secondary": "#2a1a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(198, 11, 30, 0.4)",
+          "--border-glow": "rgba(160, 82, 45, 0.4)",
         },
-        // German Team - Black and Red with Orange accents
+        // German Team - Ghost White with Silver accents
         kaiser_motorsport: {
-          "--primary-color": "#FF4500",
-          "--accent-color": "#FFFFFF",
+          "--primary-color": "#F7F7FF",
+          "--primary-color-rgb": "247, 247, 255",
+          "--accent-color": "#B3B3B3",
+          "--accent-color-rgb": "179, 179, 179",
+          "--primary-color-transparent": "rgba(247, 247, 255, 0.15)",
+          "--accent-color-transparent": "rgba(179, 179, 179, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a1a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#ffaa66",
-          "--border-glow": "rgba(255, 69, 0, 0.4)",
+          "--text-primary": "#000000",
+          "--text-secondary": "#222222",
+          "--border-glow": "rgba(247, 247, 255, 0.4)",
         },
-        // US Team - Navy and Red with White accents
+        // US Team - Obsidian with Platinum accents
         liberty_racing: {
-          "--primary-color": "#002868",
-          "--accent-color": "#FFFFFF",
+          "--primary-color": "#0d0d0d",
+          "--primary-color-rgb": "13, 13, 13",
+          "--accent-color": "#E5E4E2",
+          "--accent-color-rgb": "229, 228, 226",
+          "--primary-color-transparent": "rgba(13, 13, 13, 0.15)",
+          "--accent-color-transparent": "rgba(229, 228, 226, 0.1)",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#aaaaff",
-          "--border-glow": "rgba(0, 40, 104, 0.4)",
+          "--text-secondary": "#aaaaaa",
+          "--border-glow": "rgba(13, 13, 13, 0.4)",
         },
-        // Indian Team - Saffron and Green with Blue accents
+        // Indian Team - Turmeric with Ivory accents
         maharaja_motors: {
-          "--primary-color": "#FF9933",
-          "--accent-color": "#87CEEB",
+          "--primary-color": "#ffa347",
+          "--primary-color-rgb": "255, 163, 71",
+          "--accent-color": "#FFFFF0",
+          "--accent-color-rgb": "255, 255, 240",
+          "--primary-color-transparent": "rgba(255, 163, 71, 0.15)",
+          "--accent-color-transparent": "rgba(255, 255, 240, 0.1)",
           "--bg-primary": "#1a1a0a",
           "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffcc88",
-          "--border-glow": "rgba(255, 153, 51, 0.4)",
+          "--border-glow": "rgba(255, 163, 71, 0.4)",
         },
-        // Brazilian Team - Green and Yellow
+        // Brazilian Team - Electric Lime with Canary accents
         samba_racing: {
-          "--primary-color": "#009739",
+          "--primary-color": "#42d653",
+          "--primary-color-rgb": "66, 214, 83",
           "--accent-color": "#FEDD00",
+          "--accent-color-rgb": "254, 221, 0",
+          "--primary-color-transparent": "rgba(66, 214, 83, 0.15)",
+          "--accent-color-transparent": "rgba(254, 221, 0, 0.1)",
           "--bg-primary": "#0a1a0a",
           "--bg-secondary": "#1a2a1a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#88ff88",
-          "--border-glow": "rgba(0, 151, 57, 0.4)",
+          "--border-glow": "rgba(66, 214, 83, 0.4)",
         },
-        // Romanian Team - Pink
+        // Romanian Team - Fuchsia with Lavender accents
         regina_curse: {
-          "--primary-color": "#FF69B4",
-          "--accent-color": "#FFB6C1",
+          "--primary-color": "#FF77BC",
+          "--primary-color-rgb": "255, 119, 188",
+          "--accent-color": "#E6E6FA",
+          "--accent-color-rgb": "230, 230, 250",
+          "--primary-color-transparent": "rgba(255, 119, 188, 0.15)",
+          "--accent-color-transparent": "rgba(230, 230, 250, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaad5",
-          "--border-glow": "rgba(255, 105, 180, 0.4)",
+          "--border-glow": "rgba(255, 119, 188, 0.4)",
         },
-        // French Team - Blue and Red with White accents
+        // French Team - Turquoise with Pearl accents
         tricolore_racing: {
-          "--primary-color": "#0055A4",
-          "--accent-color": "#FFFFFF",
+          "--primary-color": "#30D5C8",
+          "--primary-color-rgb": "48, 213, 200",
+          "--accent-color": "#F0EAD6",
+          "--accent-color-rgb": "240, 234, 214",
+          "--primary-color-transparent": "rgba(48, 213, 200, 0.15)",
+          "--accent-color-transparent": "rgba(240, 234, 214, 0.1)",
           "--bg-primary": "#0a0a1a",
           "--bg-secondary": "#1a1a2a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#88aaff",
-          "--border-glow": "rgba(0, 85, 164, 0.4)",
+          "--text-secondary": "#88ffee",
+          "--border-glow": "rgba(48, 213, 200, 0.4)",
         },
-        // Japanese Team - Red and White with Black accents
+        // Japanese Team - Ruby with Pearl accents
         rising_sun: {
-          "--primary-color": "#BC002D",
+          "--primary-color": "#E0115F",
+          "--primary-color-rgb": "224, 17, 95",
           "--accent-color": "#FFFFFF",
+          "--accent-color-rgb": "255, 255, 255",
+          "--primary-color-transparent": "rgba(224, 17, 95, 0.15)",
+          "--accent-color-transparent": "rgba(255, 255, 255, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a2a",
           "--text-primary": "#ffffff",
           "--text-secondary": "#ffaaaa",
-          "--border-glow": "rgba(188, 0, 45, 0.4)",
+          "--border-glow": "rgba(224, 17, 95, 0.4)",
         },
-        // Venezuelan Team - Yellow, Blue, Red
+        // Venezuelan Team - Canary with Cerulean accents
         velocidad_venezuela: {
-          "--primary-color": "#FFCC00",
-          "--accent-color": "#87CEEB",
+          "--primary-color": "#FFEF00",
+          "--primary-color-rgb": "255, 239, 0",
+          "--accent-color": "#007BA7",
+          "--accent-color-rgb": "0, 123, 167",
+          "--primary-color-transparent": "rgba(255, 239, 0, 0.15)",
+          "--accent-color-transparent": "rgba(0, 123, 167, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a1a2a",
-          "--text-primary": "#ffffff",
-          "--text-secondary": "#ffcc88",
-          "--border-glow": "rgba(255, 204, 0, 0.4)",
+          "--text-primary": "#000000",
+          "--text-secondary": "#222222",
+          "--border-glow": "rgba(255, 239, 0, 0.4)",
         },
-        // Italian Team - Green, White, Red
+        // Italian Team - Royal Purple with Scarlet accents
         veloce_italia: {
-          "--primary-color": "#009246",
-          "--accent-color": "#CE2B37",
+          "--primary-color": "#7851A9",
+          "--primary-color-rgb": "120, 81, 169",
+          "--accent-color": "#FF2400",
+          "--accent-color-rgb": "255, 36, 0",
+          "--primary-color-transparent": "rgba(120, 81, 169, 0.15)",
+          "--accent-color-transparent": "rgba(255, 36, 0, 0.1)",
           "--bg-primary": "#1a0a0a",
           "--bg-secondary": "#2a2a1a",
           "--text-primary": "#ffffff",
-          "--text-secondary": "#88ff88",
-          "--border-glow": "rgba(0, 146, 70, 0.4)",
+          "--text-secondary": "#ddaaff",
+          "--border-glow": "rgba(120, 81, 169, 0.4)",
         },
       };
 
@@ -2557,6 +2629,18 @@
         teamCards.forEach((card) => {
           const cardTeam = card.getAttribute("data-team");
           card.classList.remove("active", "prev", "next", "hidden");
+          
+          // Reset any custom styling from previous selections
+          card.style.background = "";
+          card.style.color = "";
+          card.style.borderColor = "";
+          card.style.boxShadow = "";
+          
+          // Reset any custom text styling
+          const textElements = card.querySelectorAll(".team-name, .fact-label, .fact-value, .attributes-title, .attribute-name, .attribute-value");
+          textElements.forEach(element => {
+            element.style.color = "";
+          });
 
           if (cardTeam === currentTeam) {
             card.classList.add("active");
@@ -2602,11 +2686,60 @@
         const activeCard = document.querySelector(".team-card.active");
         activeCard.style.borderColor = "var(--accent-color)";
         activeCard.style.boxShadow = "0 0 30px var(--border-glow)";
+        
+        // Check if this team has dark text (specifically kaiser_motorsport and velocidad_venezuela)
+        const hasDarkText = selectedTeam === "kaiser_motorsport" || selectedTeam === "velocidad_venezuela";
+        
+        // Apply team-colored background to the active card with higher opacity for light teams
+        if (hasDarkText) {
+          // For teams with dark text, use a much lighter/stronger background
+          activeCard.style.background = `linear-gradient(
+            145deg,
+            rgba(var(--primary-color-rgb), 0.75),
+            rgba(var(--accent-color-rgb), 0.4)
+          )`;
+          // Fix the contrast for the attribute fill
+          const attributeFills = activeCard.querySelectorAll(".attribute-fill");
+          attributeFills.forEach(fill => {
+            fill.style.background = `linear-gradient(90deg, var(--primary-color), var(--accent-color))`;
+          });
+        } else {
+          // For teams with light text on dark background, keep more transparent
+          activeCard.style.background = `linear-gradient(
+            145deg,
+            var(--primary-color-transparent),
+            var(--accent-color-transparent)
+          )`;
+        }
+        
+        // Ensure text is readable - use the team's text color
+        activeCard.style.color = "var(--text-primary)";
+        
+        // Update any additional text elements that might need contrast adjustment
+        const teamTextElements = activeCard.querySelectorAll(".team-name, .fact-label, .attributes-title");
+        teamTextElements.forEach(element => {
+          element.style.color = "var(--text-primary)";
+        });
+        
+        const teamValueElements = activeCard.querySelectorAll(".fact-value, .attribute-name, .attribute-value");
+        teamValueElements.forEach(element => {
+          element.style.color = "var(--text-secondary)";
+        });
       }
 
       function applyTeamTheme(teamKey) {
         const theme = teamThemes[teamKey];
         const root = document.documentElement;
+
+        // Check if this is a team with dark text that needs a lighter background
+        const hasDarkText = teamKey === "kaiser_motorsport" || teamKey === "velocidad_venezuela";
+
+        // Apply custom background colors for the team selection screen for teams with dark text
+        if (hasDarkText) {
+          // Modify the bg-primary and bg-secondary to be lighter for better contrast
+          root.style.setProperty("--bg-primary", "#3a2a2a");
+          root.style.setProperty("--bg-secondary", "#4a3a3a");
+        }
 
         Object.keys(theme).forEach((property) => {
           root.style.setProperty(property, theme[property]);
@@ -3135,7 +3268,7 @@
                     <span style="width: 40px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
                     <span style="width: 80px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
                     <span style="width: 30px; display: inline-block; font-size: 0.9em;">${weatherDisplay}</span>
-                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: #888;">${difficultyDisplay}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--text-secondary);">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
@@ -3175,7 +3308,7 @@
                     <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
                     <span style="width: 70px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
                     <span style="width: 25px; display: inline-block; font-size: 0.8em;">${weatherDisplay}</span>
-                    <span style="width: 25px; display: inline-block; font-size: 0.7em; color: #888;">${difficultyDisplay}</span>
+                    <span style="width: 25px; display: inline-block; font-size: 0.7em; color: var(--text-secondary);">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
         });
@@ -3397,6 +3530,7 @@
         lapTimes: [], // Array of completed lap times in seconds
         currentLapStartTime: 0, // When current lap started
         totalRaceTime: 0, // Sum of all completed lap times
+        lastLapCompletionTime: 0, // Will be set on first lap completion for queue-based standings
         // Checkpoint timing for gap calculations
         checkpointTimes: {},
       };
@@ -3408,7 +3542,7 @@
       const aiTeams = [
         {
           name: "Emerald Isle Racing",
-          color: "#228B22",
+          color: "#169873",
           country: "Ireland",
           founded: 2018,
           championships: 2,
@@ -3424,7 +3558,7 @@
         },
         {
           name: "Dragon Force Motorsport",
-          color: "#DC143C",
+          color: "#8e2043",
           country: "Wales",
           founded: 2016,
           championships: 1,
@@ -3440,7 +3574,7 @@
         },
         {
           name: "Highland Racing Team",
-          color: "#003DA5",
+          color: "#0F52BA",
           country: "Scotland",
           founded: 2020,
           championships: 0,
@@ -3472,7 +3606,7 @@
         },
         {
           name: "Tricolore Racing",
-          color: "#0055A4",
+          color: "#30D5C8",
           country: "France",
           founded: 2017,
           championships: 1,
@@ -3488,7 +3622,7 @@
         },
         {
           name: "Kaiser Motorsport",
-          color: "#FF0000",
+          color: "#F7F7FF",
           country: "Germany",
           founded: 2014,
           championships: 4,
@@ -3504,7 +3638,7 @@
         },
         {
           name: "Iberian Speed",
-          color: "#C60B1E",
+          color: "#A0522D",
           country: "Spain",
           founded: 2019,
           championships: 0,
@@ -3520,7 +3654,7 @@
         },
         {
           name: "Veloce Italia",
-          color: "#009246",
+          color: "#7851A9",
           country: "Italy",
           founded: 2013,
           championships: 2,
@@ -3536,7 +3670,7 @@
         },
         {
           name: "Adriatic Racing",
-          color: "#FF6B00",
+          color: "#FF8C42",
           country: "Croatia",
           founded: 2021,
           championships: 0,
@@ -3552,7 +3686,7 @@
         },
         {
           name: "Liberty Racing",
-          color: "#002868",
+          color: "#0d0d0d",
           country: "USA",
           founded: 2012,
           championships: 1,
@@ -3568,7 +3702,7 @@
         },
         {
           name: "Rising Sun Motors",
-          color: "#BC002D",
+          color: "#E0115F",
           country: "Japan",
           founded: 2016,
           championships: 0,
@@ -3584,7 +3718,7 @@
         },
         {
           name: "Celestial Motors",
-          color: "#DE2910",
+          color: "#2fa889",
           country: "China",
           founded: 2018,
           championships: 0,
@@ -3600,7 +3734,7 @@
         },
         {
           name: "Maharaja Motors",
-          color: "#FF9933",
+          color: "#ffa347",
           country: "India",
           founded: 2020,
           championships: 0,
@@ -3616,7 +3750,7 @@
         },
         {
           name: "Samba Racing Team",
-          color: "#009739",
+          color: "#42d653",
           country: "Brazil",
           founded: 2011,
           championships: 2,
@@ -3632,7 +3766,7 @@
         },
         {
           name: "Velocidad Venezuela",
-          color: "#FFCC00",
+          color: "#FFEF00",
           country: "Venezuela",
           founded: 2021,
           championships: 0,
@@ -3648,7 +3782,7 @@
         },
         {
           name: "Regina Curse",
-          color: "#FF69B4",
+          color: "#FF77BC",
           country: "Romania",
           founded: 2022,
           championships: 0,
@@ -4407,6 +4541,7 @@
             lapsCompleted: 0,
             targetWaypoint: 1,
             racePosition: i + 2,
+            gridPosition: i + 1, // Grid position for race start ordering
             // Damage and wear system (reset to zero for new race)
             damage: {
               speed: 0, // 0-100, reduces maxSpeed
@@ -4436,6 +4571,7 @@
             lapTimes: [], // Array of completed lap times in seconds
             currentLapStartTime: 0, // When current lap started
             totalRaceTime: 0, // Sum of all completed lap times
+            lastLapCompletionTime: 0, // Will be set on first lap completion for queue-based standings
             // Checkpoint timing for gap calculations
             checkpointTimes: {},
           };
@@ -5521,6 +5657,9 @@
             // Check if all checkpoints were hit in sequence
             const allCheckpointsHit = car.checkpointsHit.every((hit) => hit);
             if (allCheckpointsHit && car.lapsCompleted > 0) {
+              // Store the timestamp when this lap was completed (for sorting)
+              car.lastLapCompletionTime = currentTime;
+              
               // Completed a full lap
               car.lapsCompleted++;
 
@@ -5619,6 +5758,9 @@
               );
             } else if (car.lapsCompleted === 0) {
               // First time hitting start/finish - start first lap
+              // Store the timestamp when this lap was completed (for sorting)
+              car.lastLapCompletionTime = currentTime;
+              
               car.lapsCompleted = 1;
 
               // Initialize lap timing for all cars
@@ -5742,27 +5884,41 @@
             totalTime += currentLapTime;
           }
           car.calculatedTotalTime = totalTime;
+          
+          // Ensure lastLapCompletionTime exists (default to a high value if not set)
+          if (car.lastLapCompletionTime === undefined) {
+            car.lastLapCompletionTime = Number.MAX_SAFE_INTEGER;
+          }
         });
 
-        // First, sort by basic race progress (lap + checkpoint)
+        // Sort by laps completed, then by lap completion time within the same lap
         allCars.sort((a, b) => {
           // First sort by laps completed
           if (b.lapsCompleted !== a.lapsCompleted) {
             return b.lapsCompleted - a.lapsCompleted;
           }
 
-          // Then by checkpoint within the same lap
+          // Cars are on the same lap, determine who completed the previous lap first
+          // The one who completed the previous lap first should be ahead
+          if (a.lapsCompleted > 0) {
+            if (a.lastLapCompletionTime !== b.lastLapCompletionTime) {
+              return a.lastLapCompletionTime - b.lastLapCompletionTime;
+            }
+          }
+          
+          // If no lap completion time is available (first lap) or they somehow 
+          // completed the lap at exactly the same time, use checkpoints
           if (b.currentCheckpoint !== a.currentCheckpoint) {
             return b.currentCheckpoint - a.currentCheckpoint;
           }
-
-          // If they're at the same lap and checkpoint,
-          // sort by their calculated total race time (lower is better)
-          const timeDiff = a.calculatedTotalTime - b.calculatedTotalTime;
-
-          // If times are very close (but not identical), still use the actual times
-          // without any artificial epsilon for true accuracy
-          return timeDiff;
+          
+          // If they're on the same checkpoint of the first lap, use grid position
+          if (a.lapsCompleted === 0) {
+            return a.gridPosition - b.gridPosition;
+          }
+          
+          // Last resort: use calculated race time
+          return a.calculatedTotalTime - b.calculatedTotalTime;
         });
 
         // Calculate time gaps to the leader for all cars
@@ -5842,7 +5998,7 @@
             Date.now() - (this.lastDebugTime || 0) > 5000);
 
         if (shouldLog) {
-          // Format: POS | Name | Lap X/5 | Sector Y | Last Lap: MM:SS.sss | Gap: +X.Xs | Raw Time
+          // Format: POS | Name | Lap X/5 | Sector Y | Last Lap: MM:SS.sss | Gap: +X.Xs | Lap Completion Time | Raw Time
           const debugText = allCars
             .map((car, index) => {
               // Format position
@@ -5867,6 +6023,11 @@
                 index === 0 ? 0 : calculateGapInSeconds(leader, car, index);
               const gapText =
                 index === 0 ? "LEADER" : `+${gapInSeconds.toFixed(3)}s`;
+                
+              // Format lap completion time (when car entered the current lap)
+              const lapCompletionTime = car.lastLapCompletionTime
+                ? new Date(car.lastLapCompletionTime).toISOString().substr(11, 12)
+                : "None";
 
               // Format calculated total time for debugging (raw, unrounded)
               const totalTimeText =
@@ -5876,7 +6037,7 @@
 
               return `${positionText} | ${
                 car.name || "Player"
-              } | ${lapInfo} | ${sector} | Last: ${lastLapTime} | ${gapText} | ${totalTimeText}`;
+              } | ${lapInfo} | ${sector} | Last: ${lastLapTime} | ${gapText} | LapEntry: ${lapCompletionTime} | ${totalTimeText}`;
             })
             .join("\n");
 
@@ -5974,11 +6135,11 @@
 
         // Format: position  team-code  player-name  lap-time  date
         div.innerHTML = `
-          <span style="color: #cccccc; font-weight: 600; width: 18px; display: inline-block;">${position}</span>
+          <span style="color: var(--text-primary); font-weight: 600; width: 18px; display: inline-block;">${position}</span>
           <span style="color: var(--accent-color); font-weight: 400; width: 30px; display: inline-block; font-size: 0.8em;">${teamCode}</span>
           <span style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${record.name}</span>
           <span style="color: var(--accent-color); width: 60px; display: inline-block; font-family: monospace;">${timeDisplay}</span>
-          <span style="color: #888; width: 70px; display: inline-block; font-size: 0.75em;">${dateDisplay}</span>
+          <span style="color: var(--text-secondary); width: 70px; display: inline-block; font-size: 0.75em;">${dateDisplay}</span>
         `;
 
         return div;
@@ -6009,15 +6170,31 @@
         // Current lap info
         const lapInfo = `${car.lapsCompleted}/${totalLaps}`;
         
+        // Add small indicator for lap entry order (cars that entered the current lap first)
+        let lapEntryIndicator = "";
+        if (index > 0 && car.lapsCompleted > 0) {
+          // Find all cars on the same lap
+          const carsOnSameLap = allCars.filter(c => c.lapsCompleted === car.lapsCompleted);
+          // Find the first car that entered this lap (smallest lastLapCompletionTime)
+          const firstToEnterLap = carsOnSameLap.reduce((first, current) => 
+            (current.lastLapCompletionTime < first.lastLapCompletionTime) ? current : first, 
+            carsOnSameLap[0]);
+          
+          // If this car was the first to enter the current lap, show an indicator
+          if (car === firstToEnterLap) {
+            lapEntryIndicator = '<span style="color: var(--accent-color); margin-left: 3px;">⦿</span>';
+          }
+        }
+        
         const carNameColor = car.isPlayer ? "var(--primary-color)" : "#ffffff";
 
         // Format: position  3-letter-abbreviation  lap-progress  last-lap-time  gap-to-leader
         div.innerHTML = `
-          <span style="color: #cccccc; font-weight: 600; width: 30px; display: inline-block;">${position}</span>
+          <span style="color: var(--text-primary); font-weight: 600; width: 30px; display: inline-block;">${position}</span>
           <span style="color: ${carNameColor}; font-weight: ${car.isPlayer ? "700" : "400"}; width: 50px; display: inline-block;">${teamCode}</span>
-          <span style="color: #fff; width: 40px; display: inline-block;">${lapInfo}</span>
-          <span style="color: #fff; width: 80px; display: inline-block;">${lastLapDisplay}</span>
-          <span style="color: #888; width: 80px; display: inline-block;">${gapText}</span>
+          <span style="color: var(--text-primary); width: 40px; display: inline-block;">${lapInfo}${lapEntryIndicator}</span>
+          <span style="color: var(--text-primary); width: 80px; display: inline-block;">${lastLapDisplay}</span>
+          <span style="color: var(--text-secondary); width: 80px; display: inline-block;">${gapText}</span>
         `;
 
         return div;
@@ -6028,10 +6205,32 @@
           return "+0.000s";
         }
 
-        const leader = allCars[0];
-        const gapInSeconds = calculateGapInSeconds(leader, car, index);
+        // Get the car immediately ahead in the race order
+        const carAhead = allCars[index - 1];
+        
+        // Calculate gap to the car ahead (not to the leader)
+        let gapInSeconds = 0;
+        
+        // If on the same lap, calculate direct time difference based on last lap completion
+        if (car.lapsCompleted === carAhead.lapsCompleted) {
+            // Use last lap completion time to calculate the gap
+            if (car.lastLapCompletionTime && carAhead.lastLapCompletionTime) {
+                // Convert from milliseconds to seconds
+                gapInSeconds = (car.lastLapCompletionTime - carAhead.lastLapCompletionTime) / 1000;
+            } else {
+                // Fallback to calculated total race time
+                gapInSeconds = car.calculatedTotalTime - carAhead.calculatedTotalTime;
+            }
+        } else {
+            // If on different laps, use the gap to leader (simpler to understand)
+            const leader = allCars[0];
+            gapInSeconds = calculateGapInSeconds(leader, car, index);
+        }
+        
+        // Ensure we don't show negative gaps (shouldn't happen, but just in case)
+        gapInSeconds = Math.max(0, gapInSeconds);
 
-        // Display the actual gap without position-based artificial inflation
+        // Display the actual gap
         return formatGapText(gapInSeconds);
       }
 
@@ -7692,12 +7891,12 @@
           } else if (leaderboard.length < 10) {
             // Made it to top 10
             document.getElementById("newRecordText").textContent =
-              "�️ LEADERBOARD POSITION! �️";
+              "LEADERBOARD POSITION!";
             document.getElementById("newRecordText").style.display = "block";
           } else {
             // Beat previous 10th place
             document.getElementById("newRecordText").textContent =
-              "� LEADERBOARD ENTRY! �";
+              "LEADERBOARD ENTRY!";
             document.getElementById("newRecordText").style.display = "block";
           }
           document.getElementById("nameInputModal").style.display = "block";
@@ -7842,6 +8041,7 @@
         player.totalRaceTime = 0;
         player.checkpointTimes = {};
         player.calculatedTotalTime = 0;
+        player.lastLapCompletionTime = 0; // Reset lap completion time for queue-based standings
 
         // Reset lap timing and race properties for all AI cars
         aiCars.forEach((car) => {
@@ -7850,6 +8050,7 @@
           car.totalRaceTime = 0;
           car.checkpointTimes = {};
           car.calculatedTotalTime = 0;
+          car.lastLapCompletionTime = 0; // Reset lap completion time for queue-based standings
         });
 
         // Reset UI elements
@@ -7869,6 +8070,7 @@
         player.lapsCompleted = 0;
         player.lapProgress = 0;
         player.racePosition = 1;
+        player.gridPosition = 0; // Player starts at pole position (first in grid)
         player.nitro = player.maxNitro; // Reset nitro to full
         player.usingNitro = false;
 
