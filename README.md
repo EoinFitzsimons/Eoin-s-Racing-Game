@@ -14,22 +14,45 @@ Eoin's Racing Game is an immersive top-down racing game where players can choose
 
 Choose from **16 international racing teams**, each representing different countries:
 
-- **![Croatia](https://flagcdn.com/w20/hr.png) Adriatic Racing (ADR)** - Speed: 85, Acceleration: 80, Handling: 90
-- **![England](https://flagcdn.com/w20/gb-eng.png) Britannia Motors (BRT)** - Speed: 88, Acceleration: 85, Handling: 87
-- **![China](https://flagcdn.com/w20/cn.png) Celestial Motors (CEM)** - Speed: 90, Acceleration: 88, Handling: 82
-- **![Wales](https://flagcdn.com/w20/gb-wls.png) Dragon Force Motorsport (DFM)** - Speed: 82, Acceleration: 90, Handling: 88
-- **![Ireland](https://flagcdn.com/w20/ie.png) Emerald Isle Racing (EIR)** - Speed: 85, Acceleration: 85, Handling: 85
-- **![Scotland](https://flagcdn.com/w20/gb-sct.png) Highland Racing Team (HRT)** - Speed: 80, Acceleration: 88, Handling: 92
-- **![Spain](https://flagcdn.com/w20/es.png) Iberian Speed (IBS)** - Speed: 92, Acceleration: 82, Handling: 86
-- **![Germany](https://flagcdn.com/w20/de.png) Kaiser Motorsport (KMS)** - Speed: 95, Acceleration: 90, Handling: 85
-- **![USA](https://flagcdn.com/w20/us.png) Liberty Racing (LBR)** - Speed: 88, Acceleration: 86, Handling: 86
-- **![India](https://flagcdn.com/w20/in.png) Maharaja Motors (MHJ)** - Speed: 83, Acceleration: 87, Handling: 90
-- **![Japan](https://flagcdn.com/w20/jp.png) Rising Sun Motors (RSM)** - Speed: 86, Acceleration: 92, Handling: 88
-- **![Brazil](https://flagcdn.com/w20/br.png) Samba Racing Team (SRT)** - Speed: 87, Acceleration: 89, Handling: 84
-- **![Romania](https://flagcdn.com/w20/ro.png) Regina Curse (RGC)** - Speed: 84, Acceleration: 83, Handling: 93
-- **![France](https://flagcdn.com/w20/fr.png) Tricolore Racing (TCR)** - Speed: 89, Acceleration: 87, Handling: 89
-- **![Venezuela](https://flagcdn.com/w20/ve.png) Velocidad Venezuela (VVR)** - Speed: 81, Acceleration: 85, Handling: 89
-- **![Italy](https://flagcdn.com/w20/it.png) Veloce Italia (VIT)** - Speed: 90, Acceleration: 84, Handling: 91
+- **![Croatia](https://flagcdn.com/w20/hr.png) Adriatic Racing (ADR)**
+- **![England](https://flagcdn.com/w20/gb-eng.png) Britannia Motors (BRT)**
+- **![China](https://flagcdn.com/w20/cn.png) Celestial Motors (CEM)**
+- **![Wales](https://flagcdn.com/w20/gb-wls.png) Dragon Force Motorsport (DFM)**
+- **![Ireland](https://flagcdn.com/w20/ie.png) Emerald Isle Racing (EIR)**
+- **![Scotland](https://flagcdn.com/w20/gb-sct.png) Highland Racing Team (HRT)**
+- **![Spain](https://flagcdn.com/w20/es.png) Iberian Speed (IBS)**
+- **![Germany](https://flagcdn.com/w20/de.png) Kaiser Motorsport (KMS)**
+- **![USA](https://flagcdn.com/w20/us.png) Liberty Racing (LBR)**
+- **![India](https://flagcdn.com/w20/in.png) Maharaja Motors (MHJ)**
+- **![Japan](https://flagcdn.com/w20/jp.png) Rising Sun Motors (RSM)**
+- **![Brazil](https://flagcdn.com/w20/br.png) Samba Racing Team (SRT)**
+- **![Romania](https://flagcdn.com/w20/ro.png) Regina Curse (RGC)**
+- **![France](https://flagcdn.com/w20/fr.png) Tricolore Racing (TCR)**
+- **![Venezuela](https://flagcdn.com/w20/ve.png) Velocidad Venezuela (VVR)**
+- **![Italy](https://flagcdn.com/w20/it.png) Veloce Italia (VIT)**
+
+#### 🏆 Team Attribute Table
+
+| Team Name                | Speed | Accel | Handling | Braking | Reliability | Tire Mgmt |
+|--------------------------|-------|-------|----------|---------|-------------|-----------|
+| Adriatic Racing          | 10    | 11    | 11       | 11      | 9           | 8         |
+| Britannia Motors         | 18    | 12    | 8        | 11      | 6           | 3         |
+| Celestial Motors         | 16    | 10    | 8        | 11      | 9           | 6         |
+| Dragon Force Motorsport  | 14    | 16    | 8        | 9       | 8           | 7         |
+| Emerald Isle Racing      | 12    | 10    | 14       | 12      | 7           | 10        |
+| Highland Racing Team     | 8     | 9     | 16       | 13      | 9           | 12        |
+| Iberian Speed            | 15    | 12    | 10       | 8       | 8           | 7         |
+| Kaiser Motorsport        | 13    | 13    | 7        | 16      | 6           | 6         |
+| Liberty Racing           | 17    | 14    | 6        | 8       | 11          | 4         |
+| Maharaja Motors          | 9     | 10    | 10       | 9       | 15          | 7         |
+| Regina Curse             | 9     | 8     | 10       | 12      | 13          | 8         |
+| Rising Sun Motors        | 11    | 12    | 14       | 13      | 4           | 6         |
+| Samba Racing Team        | 12    | 19    | 13       | 7       | 5           | 4         |
+| Tricolore Racing         | 11    | 11    | 12       | 12      | 9           | 14        |
+| Velocidad Venezuela      | 7     | 9     | 13       | 14      | 9           | 8         |
+| Veloce Italia            | 16    | 18    | 9        | 8       | 4           | 5         |
+
+*All attributes are on a 1-20 scale.*
 
 ### 🎨 Dynamic Team Themes
 
@@ -48,6 +71,7 @@ Each team features:
 - **Nitro boost system** for strategic overtaking
 - **Comprehensive checkpoint system** preventing shortcuts
 - **Real-time collision detection** and damage system
+- **Custom weather system** with clear, rain, and storms.
 
 ### 📊 Professional HUD
 
@@ -161,25 +185,6 @@ Each team features:
 2. **Open** in any modern web browser
 3. **Start Playing** - No additional setup required!
 
-### Alternative: Run Locally
-
-```bash
-# Clone or download the repository
-git clone [repository-url]
-
-# Navigate to the game directory
-cd racing-game
-
-# Open in browser (or use a local server)
-python -m http.server 8000  # Python 3
-# OR
-python -m SimpleHTTPServer 8000  # Python 2
-# OR
-npx serve .  # Node.js
-
-# Open http://localhost:8000 in your browser
-```
-
 ## 🏁 Game Tips & Strategy
 
 ### **Racing Tips**
@@ -239,7 +244,7 @@ Contributions are welcome! Feel free to:
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source.
 
 ## 🎉 Credits
 
@@ -250,33 +255,3 @@ Developed with passion for racing simulation and international motorsport cultur
 **Ready to Race? Choose your team and start your championship journey!** 🏁
 
 *Experience the thrill of international circuit racing from your browser.*
-
-## 🔄 Recent Updates
-
-### July 2025 Update
-
-#### 🏁 Start/Finish Line Improvements
-
-- Fixed issue where AI cars and sometimes the player weren't properly registering the start/finish line checkpoint
-- Ensured all cars (player and AI) start behind the start/finish line for correct checkpoint detection
-- Increased the detection area for the start/finish checkpoint for improved reliability
-- Maintained gentle race start protection (small upward velocity) to help cars cross the line
-
-#### ⏱️ Best Lap Tracking
-
-- Added comprehensive lap timing system to track and display best lap times
-- Best lap time now displays in the broadcast bar during races
-- Best lap time shows on the race completion screen
-- Fixed reset functionality to ensure best lap time resets when restarting race or selecting a new team
-
-#### 🎨 UI Improvements
-
-- Enhanced text visibility to ensure all UI elements are readable against all backgrounds
-- Fixed dark-on-dark text issues for better contrast
-- Improved overall UI consistency and readability
-
-#### 🔧 Bug Fixes
-
-- Fixed code duplication in team selection return function
-- Ensured proper placement of all cars on the starting grid
-- Improved race completion screen display and statistics

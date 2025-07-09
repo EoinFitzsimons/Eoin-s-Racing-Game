@@ -2845,7 +2845,7 @@
           const handlingMultiplier = (1.0 + (teamData.attributes.handling / 20) * 1.0) * playerMultiplier; // Turn rate scaling
           const brakingMultiplier = (1.0 + (teamData.attributes.braking / 20) * 1.0) * playerMultiplier; // Braking force scaling
           const reliabilityMultiplier = (0.8 + (teamData.attributes.reliability / 20) * 0.4) * playerMultiplier; // Damage resistance (0.8-1.2)
-          const tireMultiplier = (0.6 + (teamData.attributes.tireManagement / 20) * 0.8) * playerMultiplier; // Tire wear reduction (0.6-1.4)
+          const tireMultiplier = (0.4 + (teamData.attributes.tireManagement / 20) * 1.2) * playerMultiplier; // Tire wear reduction (0.4-1.6)
 
           // Apply calculated multipliers to base car performance stats
           player.maxSpeed = player.baseMaxSpeed * speedMultiplier;
@@ -2855,7 +2855,7 @@
           player.brakingPower = (player.baseBrakingPower || 0.15) * brakingMultiplier;
 
           // Tire and reliability systems
-          player.tireWearRate = 0.4 / tireMultiplier; // Better tire management = slower wear
+          player.tireWearRate = 0.05 / tireMultiplier; // Better tire management = slower wear - reduced for longer tire life (5 laps)
           player.reliabilityFactor = reliabilityMultiplier; // Affects damage susceptibility
 
           // Ensure lap timing and race progress tracking are properly initialized
@@ -3582,7 +3582,7 @@
         },
         // Tire management (affected by team attributes)
         tireWear: 0, // 0-100, affects grip over time
-        tireWearRate: 0.4, // Rate of tire degradation per frame
+        tireWearRate: 0.15, // Rate of tire degradation per frame
         reliabilityFactor: 1.0, // Affects chance of mechanical failures
         lastCollisionTime: 0,
         // Lap time tracking for accurate gap calculation
@@ -3612,8 +3612,8 @@
             handling: 14,
             braking: 12,
             reliability: 7,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 10,
+          }, // Total: 65
         },
         {
           name: "Dragon Force Motorsport",
@@ -3628,8 +3628,8 @@
             handling: 8,
             braking: 9,
             reliability: 8,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 7,
+          }, // Total: 62
         },
         {
           name: "Highland Racing Team",
@@ -3644,8 +3644,8 @@
             handling: 16,
             braking: 13,
             reliability: 9,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 12,
+          }, // Total: 67
         },
         {
           name: "Britannia Motors",
@@ -3660,8 +3660,8 @@
             handling: 8,
             braking: 11,
             reliability: 6,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 3,
+          }, // Total: 58
         },
         {
           name: "Tricolore Racing",
@@ -3676,8 +3676,8 @@
             handling: 12,
             braking: 12,
             reliability: 9,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 14,
+          }, // Total: 69
         },
         {
           name: "Kaiser Motorsport",
@@ -3692,8 +3692,8 @@
             handling: 7,
             braking: 16,
             reliability: 6,
-            tireManagement: 5,
-          }, // Total: 60
+            tireManagement: 6,
+          }, // Total: 61
         },
         {
           name: "Iberian Speed",
@@ -3707,8 +3707,8 @@
             acceleration: 12,
             handling: 10,
             braking: 8,
-            reliability: 10,
-            tireManagement: 5,
+            reliability: 8,
+            tireManagement: 7,
           }, // Total: 60
         },
         {
@@ -3739,8 +3739,8 @@
             acceleration: 11,
             handling: 11,
             braking: 11,
-            reliability: 12,
-            tireManagement: 5,
+            reliability: 9,
+            tireManagement: 8,
           }, // Total: 60
         },
         {
@@ -3755,8 +3755,8 @@
             acceleration: 14,
             handling: 6,
             braking: 8,
-            reliability: 10,
-            tireManagement: 5,
+            reliability: 11,
+            tireManagement: 4,
           }, // Total: 60
         },
         {
@@ -3771,8 +3771,8 @@
             acceleration: 12,
             handling: 14,
             braking: 13,
-            reliability: 5,
-            tireManagement: 5,
+            reliability: 4,
+            tireManagement: 6,
           }, // Total: 60
         },
         {
@@ -3787,8 +3787,8 @@
             acceleration: 10,
             handling: 8,
             braking: 11,
-            reliability: 10,
-            tireManagement: 5,
+            reliability: 9,
+            tireManagement: 6,
           }, // Total: 60
         },
         {
@@ -3803,8 +3803,8 @@
             acceleration: 10,
             handling: 10,
             braking: 9,
-            reliability: 17,
-            tireManagement: 5,
+            reliability: 15,
+            tireManagement: 7,
           }, // Total: 60
         },
         {
@@ -3819,8 +3819,8 @@
             acceleration: 19,
             handling: 13,
             braking: 7,
-            reliability: 4,
-            tireManagement: 5,
+            reliability: 5,
+            tireManagement: 4,
           }, // Total: 60
         },
         {
@@ -3835,8 +3835,8 @@
             acceleration: 9,
             handling: 13,
             braking: 14,
-            reliability: 12,
-            tireManagement: 5,
+            reliability: 9,
+            tireManagement: 8,
           }, // Total: 60
         },
         {
@@ -3851,8 +3851,8 @@
             acceleration: 8,
             handling: 10,
             braking: 12,
-            reliability: 16,
-            tireManagement: 5,
+            reliability: 13,
+            tireManagement: 8,
           }, // Total: 60
         },
       ];
@@ -4714,7 +4714,7 @@
           const handlingMultiplier = (1.0 + (team.attributes.handling / 20) * 1.0) * difficultyMultiplier;
           const brakingMultiplier = (1.0 + (team.attributes.braking / 20) * 1.0) * difficultyMultiplier;
           const reliabilityMultiplier = (0.8 + (team.attributes.reliability / 20) * 0.4) * difficultyMultiplier;
-          const tireMultiplier = (0.6 + (team.attributes.tireManagement / 20) * 0.8) * difficultyMultiplier;
+          const tireMultiplier = (0.4 + (team.attributes.tireManagement / 20) * 1.2) * difficultyMultiplier;
 
           const aiCar = {
             x: 1000 + (gridSide === 0 ? -30 : 30), // Grid spacing left/right of centerline
@@ -4753,7 +4753,7 @@
             },
             // Tire management (reset to zero for new race)
             tireWear: 0, // 0-100, affected by tireManagement
-            tireWearRate: 0.5 / tireMultiplier, // Slower wear = better tire management
+            tireWearRate: 0.06 / tireMultiplier, // Slower wear = better tire management - reduced for longer tire life (5 laps)
             reliabilityFactor: reliabilityMultiplier, // Affects chance of mechanical failures
             lastCollisionTime: 0,
             // AI Nitro system
@@ -5037,9 +5037,34 @@
         return { front: frontGrip, rear: rearGrip };
       }
 
+      /**
+       * Helper function to normalize an angle to the range -PI to PI
+       */
+      function normalizeAngle(angle) {
+        while (angle > Math.PI) angle -= 2 * Math.PI;
+        while (angle < -Math.PI) angle += 2 * Math.PI;
+        return angle;
+      }
+
       function updatePlayer() {
         const currentSpeed = calculateCurrentSpeed();
         const inputs = handlePlayerInputs();
+
+        // Detect if player is sliding (difference between car angle and movement direction)
+        if (currentSpeed > 1.0) { // Only check sliding when moving fast enough
+          const movementAngle = Math.atan2(player.velocity.y, player.velocity.x);
+          const angleDifference = Math.abs(normalizeAngle(player.angle - movementAngle));
+          
+          // If the difference between car heading and movement direction is significant, car is sliding
+          player.isSliding = angleDifference > 0.3; // About 17 degrees difference
+          
+          // Add tire marks when sliding at speed
+          if (player.isSliding && currentSpeed > 3) {
+            addTireMark(player.x, player.y, player.angle);
+          }
+        } else {
+          player.isSliding = false;
+        }
 
         handleNitroSystem(inputs);
         handleSteering(inputs.steering, currentSpeed);
@@ -5297,17 +5322,27 @@
       function updateTireWear(inputs, currentSpeed) {
         if (!gameRunning) return;
 
-        const speedWearFactor = currentSpeed / player.maxSpeed;
-        const inputWearFactor =
-          Math.abs(inputs.steering) * 0.5 + Math.abs(inputs.braking) * 0.3;
-          
-        // Add random variations to tire wear (more unpredictable)
-        const randomFactor = Math.random() * 0.2; // Random factor between 0-0.2
+        // Only apply tire wear when car is actually moving at a reasonable speed
+        if (currentSpeed < 1.5) return;
         
+        // Scale wear with speed - faster speeds cause more wear
+        // Significantly reduced wear factor to make tires last ~5 laps
+        const speedWearFactor = (currentSpeed / player.maxSpeed) * 0.05; 
+        
+        // Input-based wear factors - aggressive inputs cause more wear
+        // Also reduced to extend tire life
+        const inputWearFactor =
+          Math.abs(inputs.steering) * 0.04 + Math.abs(inputs.braking) * 0.03;
+          
+        // Sliding wear factor - sliding causes significantly more tire wear
+        // Keep this higher to punish excessive sliding
+        const slidingWearFactor = player.isSliding ? 0.1 : 0;
+        
+        // Calculate total wear for this frame
         player.tireWear = Math.min(
           100,
           player.tireWear +
-            player.tireWearRate * (1 + speedWearFactor + inputWearFactor + randomFactor)
+            player.tireWearRate * (speedWearFactor + inputWearFactor + slidingWearFactor)
         );
       }
 
@@ -5318,8 +5353,8 @@
         // Using a progressive function now where higher wear has disproportionately more effect
         // This means slightly worn tires are still okay but heavily worn tires become dangerous
         const wearPercentage = player.tireWear / 100;
-        const progressiveWearEffect = wearPercentage * wearPercentage * 1.5; // Square for exponential effect
-        const tireGripLoss = gameRunning ? progressiveWearEffect / 2 : 0; // More significant grip loss
+        const progressiveWearEffect = wearPercentage * wearPercentage * 1.2; // Square for exponential effect
+        const tireGripLoss = gameRunning ? progressiveWearEffect / 2.5 : 0; // Less severe grip loss
         
         // Calculate base friction that applies to all conditions
         const combinedFriction = Math.max(
@@ -5330,7 +5365,7 @@
         // Check if player is sliding (based on sliding detection)
         if (player.isSliding && player.tireWear > 20) {
           // When sliding with worn tires, grip loss is even more severe
-          const slidingPenalty = 0.01 + (wearPercentage * 0.02);
+          const slidingPenalty = 0.008 + (wearPercentage * 0.015);
           player.velocity.x *= (combinedFriction - slidingPenalty);
           player.velocity.y *= (combinedFriction - slidingPenalty);
         } else {
@@ -5384,6 +5419,27 @@
           target,
           angleDiff
         );
+
+        // Calculate current AI speed
+        const currentSpeedAI = Math.sqrt(
+          ai.velocity.x * ai.velocity.x + ai.velocity.y * ai.velocity.y
+        );
+
+        // Detect if AI is sliding (difference between car angle and movement direction)
+        if (currentSpeedAI > 1.0) { // Only check sliding when moving fast enough
+          const movementAngle = Math.atan2(ai.velocity.y, ai.velocity.x);
+          const angleDifference = Math.abs(normalizeAngle(ai.angle - movementAngle));
+          
+          // If the difference between car heading and movement direction is significant, car is sliding
+          ai.isSliding = angleDifference > 0.3; // About 17 degrees difference
+          
+          // Add tire marks when sliding at speed
+          if (ai.isSliding && currentSpeedAI > 3) {
+            addTireMark(ai.x, ai.y, ai.angle);
+          }
+        } else {
+          ai.isSliding = false;
+        }
 
         handleAINitroSystem(ai, allCars, target, accelerationMultiplier);
         applyMovementForces(ai, accelerationMultiplier);
@@ -5643,20 +5699,23 @@
             ai.velocity.x * ai.velocity.x + ai.velocity.y * ai.velocity.y
           );
 
-          // Normalize speed to create wear factor (0-1 range)
-          const speedWearFactor = currentSpeedAI / ai.maxSpeed;
+          // Only apply tire wear when car is actually moving at a reasonable speed
+          if (currentSpeedAI < 1.5) return;
+          
+          // Scale wear with speed - faster speeds cause more wear
+          const speedWearFactor = (currentSpeedAI / ai.maxSpeed) * 0.2;
 
           // Steering wear - sharp turns damage tires more
-          const steerWearFactor = Math.abs(steerAmount) * 0.3;
+          const steerWearFactor = Math.abs(steerAmount) * 0.1;
           
-          // Add random factor for unpredictability
-          const randomFactor = Math.random() * 0.2;
-
-          // Apply cumulative tire wear with speed and steering penalties
+          // Sliding wear - sliding causes significantly more tire wear
+          const slidingWearFactor = ai.isSliding ? 0.15 : 0;
+          
+          // Calculate total wear for this frame
           ai.tireWear = Math.min(
             100,
             ai.tireWear +
-              ai.tireWearRate * (1 + speedWearFactor + steerWearFactor + randomFactor)
+              ai.tireWearRate * (speedWearFactor + steerWearFactor + slidingWearFactor)
           );
         }
       }
@@ -5670,21 +5729,31 @@
         // Base friction coefficient for natural deceleration
         const personalityFriction = 0.985;
 
-        // Tire wear reduces grip - worn tires slide more (increased effect from 500 to 250)
-        const tireGripLoss = gameRunning ? ai.tireWear / 250 : 0;
+        // Progressive quadratic tire wear effect, matching player model
+        const wearPercentage = ai.tireWear / 100;
+        const progressiveWearEffect = wearPercentage * wearPercentage * 1.2; // Square for exponential effect
+        const tireGripLoss = gameRunning ? progressiveWearEffect / 2.5 : 0;
 
         // Smooth drivers maintain better tire contact and grip
         const smoothnessBonus = ai.behavior.smoothness * 0.005;
 
         // Combine all friction factors with minimum threshold
         const combinedFrictionAI = Math.max(
-          0.975,
+          0.970,
           personalityFriction + smoothnessBonus - tireGripLoss
         );
 
-        // Apply friction to both velocity components
-        ai.velocity.x *= combinedFrictionAI;
-        ai.velocity.y *= combinedFrictionAI;
+        // Check if AI is sliding and apply additional penalties
+        if (ai.isSliding && ai.tireWear > 20) {
+          // When sliding with worn tires, grip loss is even more severe
+          const slidingPenalty = 0.008 + (wearPercentage * 0.015);
+          ai.velocity.x *= (combinedFrictionAI - slidingPenalty);
+          ai.velocity.y *= (combinedFrictionAI - slidingPenalty);
+        } else {
+          // Normal friction application
+          ai.velocity.x *= combinedFrictionAI;
+          ai.velocity.y *= combinedFrictionAI;
+        }
       }
 
       function checkBounds(ai) {
@@ -8355,7 +8424,7 @@
           player.turnSpeed = player.baseTurnSpeed * handlingMultiplier;
           player.friction =
             player.baseFriction + (player.teamAttributes.braking - 10) * 0.002;
-          player.tireWearRate = 0.4 / tireMultiplier;
+          player.tireWearRate = 0.15 / tireMultiplier;
           player.reliabilityFactor = reliabilityMultiplier;
         }
 
