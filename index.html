@@ -8277,7 +8277,8 @@
         const isNewRecord =
           sortedLeaderboard.length < LEADERBOARD_SIZE ||
           compareRaceEntries(candidateEntry, sortedLeaderboard[sortedLeaderboard.length - 1]) < 0;
-        const recordTime = sortedLeaderboard[0]?.time;
+        const recordTime =
+          sortedLeaderboard.length > 0 ? Math.min(...sortedLeaderboard.map((entry) => entry.time)) : undefined;
         const beatsBestResult =
           sortedLeaderboard.length > 0 && compareRaceEntries(candidateEntry, sortedLeaderboard[0]) < 0;
 
@@ -8314,16 +8315,18 @@
           // Calculate split from record
           if (recordTime) {
             const split = currentRaceTime - recordTime;
-            const splitMinutes = Math.floor(split / 60);
-            const splitSeconds = (split % 60).toFixed(3);
+            const splitSign = split < 0 ? "-" : "+";
+            const absoluteSplit = Math.abs(split);
+            const splitMinutes = Math.floor(absoluteSplit / 60);
+            const splitSeconds = (absoluteSplit % 60).toFixed(3);
             const splitText =
               splitMinutes > 0
-                ? `+${splitMinutes}:${splitSeconds.padStart(6, "0")}`
-                : `+${splitSeconds}s`;
+                ? `${splitSign}${splitMinutes}:${splitSeconds.padStart(6, "0")}`
+                : `${splitSign}${splitSeconds}s`;
 
             document.getElementById(
               "newRecordText"
-            ).textContent = `Leaderboard Position: ${position} | +${splitText} from record`;
+            ).textContent = `Leaderboard Position: ${position} | ${splitText} from fastest time`;
           } else {
             document.getElementById(
               "newRecordText"
