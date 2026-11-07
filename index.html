@@ -37,8 +37,7 @@
     <meta name="game:features" content="Team Selection, Dynamic Weather, AI Opponents, Time Trial Mode, Leaderboards">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 4'%3E%3Cpath fill='%23fff' d='M0 0h4v4H0z'/%3E%3Cpath d='M0 0h1v1H0zM2 0h1v1H2zM1 1h1v1H1zM3 1h1v1H3zM0 2h1v1H0zM2 2h1v1H2zM1 3h1v1H1zM3 3h1v1H3z'/%3E%3C/svg%3E">
     
     <!-- Preload and Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,7 +111,7 @@
       .team-selection-title {
         font-size: 3.5rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         text-shadow: 0 0 20px var(--border-glow);
         margin-bottom: 1rem;
         letter-spacing: 2px;
@@ -416,7 +415,7 @@
         position: relative;
         background: rgba(0, 0, 0, 0.7);
         border: 1px solid var(--primary-color);
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         cursor: pointer;
         transition: all 0.3s;
         z-index: 50;
@@ -467,7 +466,7 @@
           var(--primary-color),
           var(--accent-color)
         );
-        color: white;
+        color: var(--on-gradient-text-color, white);
         border: none;
         padding: 1rem 2.5rem;
         font-size: 1.1rem;
@@ -586,8 +585,8 @@
 
       .controls-info {
         position: absolute;
-        top: 20px;
-        right: 20px;
+        bottom: 80px;
+        left: 20px;
         background: linear-gradient(
           145deg,
           rgba(0, 0, 0, 0.9),
@@ -630,7 +629,7 @@
       .title {
         font-size: 3.5rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         text-shadow: 0 0 20px var(--border-glow);
         margin-bottom: 1rem;
         letter-spacing: 2px;
@@ -652,7 +651,7 @@
       }
 
       .start-instructions h3 {
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         margin-bottom: 1rem;
         font-size: 1.3rem;
       }
@@ -682,7 +681,7 @@
       }
       
       .difficulty-selector h3 {
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         margin-bottom: 1rem;
         font-size: 1.3rem;
       }
@@ -715,6 +714,7 @@
         background-color: var(--primary-color);
         border-color: var(--primary-color);
         box-shadow: 0 0 15px var(--border-glow);
+        color: var(--on-primary-text-color, white);
       }
       
       .difficulty-description {
@@ -743,7 +743,7 @@
       }
 
       .weather-selector h3 {
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         margin-bottom: 1rem;
         font-size: 1.3rem;
       }
@@ -776,6 +776,7 @@
         background-color: var(--primary-color);
         border-color: var(--primary-color);
         box-shadow: 0 0 15px var(--border-glow);
+        color: var(--on-primary-text-color, white);
       }
 
       /* Time Trial Mode Styles */
@@ -816,7 +817,7 @@
         background-color: var(--primary-color);
         border-color: var(--primary-color);
         box-shadow: 0 0 20px var(--border-glow);
-        color: white;
+        color: var(--on-primary-text-color, white);
       }
 
       .time-trial-section {
@@ -865,7 +866,7 @@
       .time-trial-btn.primary {
         background: var(--primary-color);
         border-color: var(--primary-color);
-        color: white;
+        color: var(--on-primary-text-color, white);
       }
 
       .time-trial-btn.primary:hover {
@@ -1005,7 +1006,7 @@
 
       .position-display {
         position: absolute;
-        top: 180px;
+        top: 20px;
         right: 20px;
         background: linear-gradient(
           145deg,
@@ -1047,7 +1048,7 @@
       }
 
       .player-pos {
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         font-weight: 600;
       }
 
@@ -1076,7 +1077,7 @@
 
       .leaderboard h3 {
         margin-bottom: 1rem;
-        color: var(--primary-color);
+        color: var(--primary-text-color, var(--primary-color));
         text-align: center;
         font-size: 1.2rem;
         font-weight: 600;
@@ -1268,14 +1269,14 @@
         }
 
         .controls-info {
-          top: 10px;
-          right: 10px;
+          bottom: 70px;
+          left: 10px;
           font-size: 0.8rem;
           padding: 1rem;
         }
 
         .position-display {
-          top: 120px;
+          top: 10px;
           right: 10px;
           width: 200px;
         }
@@ -1426,6 +1427,19 @@
           rgba(0, 0, 0, 0.8)
         );
         border: 2px solid var(--primary-color);
+      }
+
+      /* Very light liveries (e.g. white, yellow) tint the active card, so it needs dark text */
+      .light-livery .team-card.active {
+        --text-primary: #111111;
+        --text-secondary: #333333;
+        color: #111111;
+      }
+
+      .light-livery .team-card.active .team-logo {
+        background: none;
+        -webkit-text-fill-color: #111111;
+        color: #111111;
       }
 
       /* Prevent horizontal overflow */
@@ -2024,7 +2038,7 @@
       <div class="ui-overlay">
         <div
           style="
-            color: var(--primary-color);
+            color: var(--primary-text-color, var(--primary-color));
             font-weight: 700;
             margin-bottom: 1rem;
             text-transform: uppercase;
@@ -2153,7 +2167,7 @@
       <div class="position-display">
         <div
           style="
-            color: var(--primary-color);
+            color: var(--primary-text-color, var(--primary-color));
             font-weight: 700;
             margin-bottom: 1rem;
             text-transform: uppercase;
@@ -2187,7 +2201,7 @@
       </div>
 
       <div class="name-input-modal" id="nameInputModal">
-        <h2 style="color: var(--primary-color); margin-bottom: 1rem">
+        <h2 style="color: var(--primary-text-color, var(--primary-color)); margin-bottom: 1rem">
           NEW RECORD
         </h2>
         <p style="margin-bottom: 1rem; color: var(--text-secondary)">
@@ -2218,7 +2232,7 @@
       </div>
 
       <div class="race-complete" id="raceComplete">
-        <h2 style="color: var(--primary-color); margin-bottom: 1rem">
+        <h2 style="color: var(--primary-text-color, var(--primary-color)); margin-bottom: 1rem">
           RACE COMPLETE
         </h2>
         <p style="font-size: 1.2rem; margin: 0.5rem 0">
@@ -2246,7 +2260,7 @@
           Lap Record:
           <span
             id="lapRecordTime"
-            style="color: var(--primary-color); font-weight: bold"
+            style="color: var(--primary-text-color, var(--primary-color)); font-weight: bold"
           ></span>
         </p>
         <p
@@ -2306,7 +2320,7 @@
 
       <!-- Time Trial Complete Dialog -->
       <div class="race-complete" id="timeTrialComplete" style="display: none;">
-        <h2 style="color: var(--primary-color); margin-bottom: 1rem">
+        <h2 style="color: var(--primary-text-color, var(--primary-color)); margin-bottom: 1rem">
           TIME TRIAL COMPLETE
         </h2>
         <p style="font-size: 1.2rem; margin: 0.5rem 0">
@@ -2789,19 +2803,67 @@
         const theme = teamThemes[teamKey];
         const root = document.documentElement;
 
-        // Check if this is a team with dark text that needs a lighter background
-        const hasDarkText = teamKey === "kaiser_motorsport" || teamKey === "velocidad_venezuela";
-
-        // Apply custom background colors for the team selection screen for teams with dark text
-        if (hasDarkText) {
-          // Modify the bg-primary and bg-secondary to be lighter for better contrast
-          root.style.setProperty("--bg-primary", "#3a2a2a");
-          root.style.setProperty("--bg-secondary", "#4a3a3a");
-        }
-
         Object.keys(theme).forEach((property) => {
           root.style.setProperty(property, theme[property]);
         });
+
+        // Dark, very light or saturated liveries need adjusted text colours to stay readable on the dark UI
+        const panelBackground = "#111111";
+        const primary = theme["--primary-color"];
+        root.style.setProperty("--primary-text-color", ensureContrast(primary, panelBackground));
+        root.style.setProperty("--on-primary-text-color", readableTextOn(primary));
+        root.style.setProperty(
+          "--on-gradient-text-color",
+          readableTextOn(mixColours(primary, theme["--accent-color"], 0.5))
+        );
+        root.classList.toggle("light-livery", relativeLuminance(primary) > 0.7);
+        if (contrastRatio(theme["--text-primary"], theme["--bg-primary"]) < 4.5) {
+          root.style.setProperty("--text-primary", "#ffffff");
+        }
+        if (contrastRatio(theme["--text-secondary"], theme["--bg-primary"]) < 4.5) {
+          root.style.setProperty("--text-secondary", "#cccccc");
+        }
+      }
+
+      function hexToRgb(hex) {
+        const value = parseInt(hex.replace("#", ""), 16);
+        return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+      }
+
+      function rgbToHex(rgb) {
+        return "#" + rgb.map((c) => Math.round(c).toString(16).padStart(2, "0")).join("");
+      }
+
+      function relativeLuminance(hex) {
+        const weights = [0.2126, 0.7152, 0.0722];
+        return hexToRgb(hex).reduce((sum, channel, i) => {
+          const c = channel / 255;
+          const linear = c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+          return sum + linear * weights[i];
+        }, 0);
+      }
+
+      function contrastRatio(a, b) {
+        const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+        return (lighter + 0.05) / (darker + 0.05);
+      }
+
+      function mixColours(a, b, weight) {
+        const rgbA = hexToRgb(a);
+        const rgbB = hexToRgb(b);
+        return rgbToHex(rgbA.map((c, i) => c + (rgbB[i] - c) * weight));
+      }
+
+      function ensureContrast(colour, background) {
+        let result = colour;
+        for (let weight = 0.1; contrastRatio(result, background) < 4.5 && weight <= 1; weight += 0.1) {
+          result = mixColours(colour, "#ffffff", weight);
+        }
+        return result;
+      }
+
+      function readableTextOn(background) {
+        return contrastRatio("#ffffff", background) >= contrastRatio("#000000", background) ? "#ffffff" : "#000000";
       }
 
       function proceedToRace() {
@@ -2928,6 +2990,17 @@
       let totalLaps = 5;
       let raceComplete = false;
       let currentRaceTime = 0;
+
+      // Fixed-step simulation: physics, AI and race timing advance 60 steps per simulated second on any display
+      const SIMULATION_STEP_MS = 1000 / 60;
+      const MAX_FRAME_DELTA_MS = 250;
+      let simulationTimeMs = 1;
+      let simulationAccumulatorMs = 0;
+      let lastFrameTimestamp = null;
+
+      function gameNow() {
+        return simulationTimeMs;
+      }
       
       // Difficulty settings
       let gameDifficulty = "medium"; // "easy", "medium", "hard"
@@ -2970,7 +3043,7 @@
       let lapStartTime = 0;
       let currentLapTime = 0;
       let bestLapTime = Number.MAX_VALUE; // Best lap time in current race
-      let lapRecord = Number.MAX_VALUE; // All-time best lap (persists between races)
+      let lapRecord = Number(localStorage.getItem("circuitRacerLapRecord")) || Number.MAX_VALUE; // All-time best race lap, saved in the browser
       let lastLapTime = 0; // Last completed lap time
       let lapTimes = [];
 
@@ -2998,6 +3071,45 @@
         localStorage.getItem("circuitRacerLeaderboard") || "[]"
       );
 
+      const LEADERBOARD_SIZE = 10;
+
+      function raceConditionsKey(entry) {
+        return `${entry.weather || "clear"}|${entry.difficulty || "medium"}`;
+      }
+
+      function compareRaceEntries(a, b) {
+        const positionA = Number.isFinite(a.position) ? a.position : Number.MAX_SAFE_INTEGER;
+        const positionB = Number.isFinite(b.position) ? b.position : Number.MAX_SAFE_INTEGER;
+        return positionA - positionB || a.time - b.time;
+      }
+
+      // Keeps the best results for each weather and difficulty combination
+      function trimLeaderboard(entries) {
+        const counts = {};
+        return [...entries].sort(compareRaceEntries).filter((entry) => {
+          const key = raceConditionsKey(entry);
+          counts[key] = (counts[key] || 0) + 1;
+          return counts[key] <= LEADERBOARD_SIZE;
+        });
+      }
+
+      function getCurrentConditionsLeaderboard() {
+        const currentKey = raceConditionsKey({ weather: gameWeather, difficulty: gameDifficulty });
+        return leaderboard.filter((entry) => raceConditionsKey(entry) === currentKey).sort(compareRaceEntries);
+      }
+
+      function getConditionsLabel() {
+        const capitalise = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+        return `${capitalise(gameWeather)}, ${capitalise(gameDifficulty)}`;
+      }
+
+      function escapeHtml(value) {
+        const replacements = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+        return String(value ?? "").replace(/[&<>"']/g, (c) => replacements[c]);
+      }
+
+      leaderboard = trimLeaderboard(leaderboard);
+
       function saveLeaderboardEntry() {
         const playerName = document
           .getElementById("playerNameInput")
@@ -3018,8 +3130,7 @@
         };
 
         leaderboard.push(entry);
-        leaderboard.sort((a, b) => a.time - b.time);
-        leaderboard = leaderboard.slice(0, 10); // Keep top 10
+        leaderboard = trimLeaderboard(leaderboard);
 
         localStorage.setItem(
           "circuitRacerLeaderboard",
@@ -3100,8 +3211,8 @@
           html += `
             <div class="time-trial-entry ${isPersonalBest ? 'personal-best' : ''}">
               <span class="time-trial-rank">${index + 1}</span>
-              <span class="time-trial-name">${entry.name}</span>
-              <span class="time-trial-team">${entry.teamName ? entry.teamName.substring(0, 3).toUpperCase() : 'N/A'}</span>
+              <span class="time-trial-name">${escapeHtml(entry.name)}</span>
+              <span class="time-trial-team">${escapeHtml(entry.teamName ? String(entry.teamName).substring(0, 3).toUpperCase() : 'N/A')}</span>
               <span class="time-trial-time">${timeString}</span>
             </div>
           `;
@@ -3161,7 +3272,12 @@
               
               // Merge with existing records
               const newRecords = importData.records.filter(record => 
-                record.name && record.time && typeof record.time === 'number'
+                record &&
+                typeof record.name === 'string' &&
+                record.name.trim() !== '' &&
+                typeof record.time === 'number' &&
+                Number.isFinite(record.time) &&
+                record.time > 0
               );
               
               timeTrialLeaderboard = [...timeTrialLeaderboard, ...newRecords];
@@ -3208,6 +3324,8 @@
         } else if (level === 'hard') {
           descriptionElement.textContent = 'Challenge mode. AI doesn\'t make mistakes and has enhanced performance. Collisions enabled.';
         }
+
+        updateLeaderboardDisplay();
       }
 
       // Weather selection functionality
@@ -3235,6 +3353,8 @@
         if (weatherEffects[type].particles) {
           initializeRainParticles();
         }
+
+        updateLeaderboardDisplay();
       }
 
       // Time Trial mode selection functionality
@@ -3269,7 +3389,7 @@
           }
           // Update objective text for time trial
           if (objectiveText) {
-            objectiveText.innerHTML = '<strong>Objective:</strong> Set the fastest single lap time and race against ghost cars!';
+            objectiveText.innerHTML = '<strong>Objective:</strong> Set the fastest single lap from a standing start!';
           }
           // Update position display to show time trial best times
           updatePositionDisplay([]);
@@ -3295,7 +3415,11 @@
         const list = document.getElementById("raceCompleteLeaderboard");
         list.innerHTML = "";
 
-        leaderboard.forEach((entry, index) => {
+        if (list.previousElementSibling) {
+          list.previousElementSibling.textContent = `RECORD TIMES (${getConditionsLabel()})`;
+        }
+
+        getCurrentConditionsLeaderboard().forEach((entry, index) => {
           const div = document.createElement("div");
           div.className = "leaderboard-entry";
           if (
@@ -3322,10 +3446,10 @@
 
           div.innerHTML = `
                     <span style="width: 20px; display: inline-block;">${index + 1}.</span>
-                    <span style="width: 90px; display: inline-block;">${displayName}</span>
-                    <span style="width: 40px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
+                    <span style="width: 90px; display: inline-block;">${escapeHtml(displayName)}</span>
+                    <span style="width: 40px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${escapeHtml(teamDisplay)}</span>
                     <span style="width: 80px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
-                    <span style="width: 30px; display: inline-block; font-size: 0.9em;">${weatherDisplay}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.9em;">P${escapeHtml(entry.position ?? "-")}</span>
                     <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--text-secondary);">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
@@ -3336,7 +3460,11 @@
         const list = document.getElementById("leaderboardList");
         list.innerHTML = "";
 
-        leaderboard.forEach((entry, index) => {
+        if (list.previousElementSibling) {
+          list.previousElementSibling.textContent = `RECORD TIMES (${getConditionsLabel()})`;
+        }
+
+        getCurrentConditionsLeaderboard().forEach((entry, index) => {
           const div = document.createElement("div");
           div.className = "leaderboard-entry";
           if (
@@ -3362,10 +3490,10 @@
 
           div.innerHTML = `
                     <span style="width: 15px; display: inline-block;">${index + 1}.</span>
-                    <span style="width: 65px; display: inline-block;">${displayName}</span>
-                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${teamDisplay}</span>
+                    <span style="width: 65px; display: inline-block;">${escapeHtml(displayName)}</span>
+                    <span style="width: 30px; display: inline-block; font-size: 0.8em; color: var(--accent-color);">${escapeHtml(teamDisplay)}</span>
                     <span style="width: 70px; display: inline-block;">${minutes}:${seconds.padStart(6, "0")}</span>
-                    <span style="width: 25px; display: inline-block; font-size: 0.8em;">${weatherDisplay}</span>
+                    <span style="width: 25px; display: inline-block; font-size: 0.8em;">P${escapeHtml(entry.position ?? "-")}</span>
                     <span style="width: 25px; display: inline-block; font-size: 0.7em; color: var(--text-secondary);">${difficultyDisplay}</span>
                 `;
           list.appendChild(div);
@@ -3406,20 +3534,13 @@
           'Adriatic Racing': 'ADR',
           'Liberty Racing': 'LBR',
           'Rising Sun Motors': 'RSM',
-          'Celestial Motors': 'CEL',
+          'Celestial Motors': 'CEM',
           'Maharaja Motors': 'MHJ',
           'Samba Racing Team': 'SRT',
-          'Velocidad Venezuela': 'VEV',
+          'Velocidad Venezuela': 'VVR',
           'Regina Curse': 'RGC'
         };
         return teamCodes[teamName] || teamName.substring(0, 3).toUpperCase();
-      }
-
-      function isNewRecord(time) {
-        return (
-          leaderboard.length < 10 ||
-          time < leaderboard[leaderboard.length - 1].time
-        );
       }
 
       // Input handling
@@ -4076,7 +4197,7 @@
       
       // Lightning system for storms
       function updateLightning() {
-        const currentTime = Date.now();
+        const currentTime = gameNow();
         
         // Create lightning bolts every 6 seconds
         if (currentTime - lastLightningTime > 6000) {
@@ -4305,7 +4426,7 @@
           if (this.defend_cooldown > 0) this.defend_cooldown--;
 
           // Simulate human-like reaction time by buffering decisions
-          this.decision_buffer.push({ cars: [...allCars], time: Date.now() });
+          this.decision_buffer.push({ cars: [...allCars], time: gameNow() });
           if (this.decision_buffer.length > this.reaction_time) {
             this.decision_buffer.shift();
           }
@@ -4330,10 +4451,10 @@
           if (
             difficultySettings[gameDifficulty].aiMistakesEnabled &&
             Math.random() < this.mistake_chance * difficultySettings[gameDifficulty].aiMistakeFrequency &&
-            Date.now() - this.last_mistake_time > 2000
+            gameNow() - this.last_mistake_time > 2000
           ) {
             this.makeMistake();
-            this.last_mistake_time = Date.now();
+            this.last_mistake_time = gameNow();
           }
 
           // Analyze racing situation with comprehensive awareness
@@ -4826,7 +4947,7 @@
         const allCars = [player, ...aiCars];
 
         // Ghosting system prevents collisions during race start when cars are close together
-        const raceTime = gameRunning ? (Date.now() - raceStartTime) / 1000 : 0;
+        const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
         const minCheckpointsForCollisions = 2; // Cars must pass 2 checkpoints before collisions enabled
         const maxGhostingTime = 15; // Maximum duration of collision protection (seconds)
 
@@ -4909,8 +5030,8 @@
         addSparkle(collisionX, collisionY);
 
         // Set collision timestamps
-        car1.lastCollisionTime = Date.now();
-        car2.lastCollisionTime = Date.now();
+        car1.lastCollisionTime = gameNow();
+        car2.lastCollisionTime = gameNow();
       }
 
       function applyCollisionDamage(car, amount) {
@@ -5196,8 +5317,8 @@
           html += `
             <div class="time-trial-entry ${isPersonalBest ? 'personal-best' : ''}">
               <span class="time-trial-rank">${index + 1}</span>
-              <span class="time-trial-name">${entry.name}</span>
-              <span class="time-trial-team">${entry.teamName ? entry.teamName.substring(0, 3).toUpperCase() : 'N/A'}</span>
+              <span class="time-trial-name">${escapeHtml(entry.name)}</span>
+              <span class="time-trial-team">${escapeHtml(entry.teamName ? String(entry.teamName).substring(0, 3).toUpperCase() : 'N/A')}</span>
               <span class="time-trial-time">${timeString}</span>
             </div>
           `;
@@ -5460,7 +5581,7 @@
       }
 
       function handleRaceStartProtection(ai) {
-        const raceTime = gameRunning ? (Date.now() - raceStartTime) / 1000 : 0;
+        const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
 
         // Only apply race start protection during the actual race, not before it starts
         if (gameRunning && raceTime < 3) {
@@ -5591,7 +5712,7 @@
         accelerationMultiplier
       ) {
         ai.usingNitro = false;
-        const currentTime = Date.now();
+        const currentTime = gameNow();
 
         if (ai.nitro < ai.maxNitro) {
           ai.nitro += ai.nitroRegenRate;
@@ -5934,12 +6055,15 @@
           }
           
           // Record checkpoint time for gap calculations
-          const currentTime = gameRunning ? Date.now() : 0;
+          const currentTime = gameRunning ? gameNow() : 0;
           if (!car.checkpointTimes) {
             car.checkpointTimes = {};
           }
           car.checkpointTimes[`${car.lapsCompleted}_${nextCheckpointIndex}`] =
             currentTime;
+          car.checkpointsPassed = (car.checkpointsPassed || 0) + 1;
+          car.checkpointPassTimes = car.checkpointPassTimes || {};
+          car.checkpointPassTimes[car.checkpointsPassed] = currentTime;
 
           // Mark this checkpoint as hit
           car.checkpointsHit[nextCheckpointIndex] = true;
@@ -5949,7 +6073,7 @@
           if (nextCheckpointIndex === 0) {
             // Check if all checkpoints were hit in sequence
             const allCheckpointsHit = car.checkpointsHit.every((hit) => hit);
-            if (allCheckpointsHit && car.lapsCompleted > 0) {
+            if (allCheckpointsHit) {
               // Store the timestamp when this lap was completed (for sorting)
               car.lastLapCompletionTime = currentTime;
               
@@ -5958,7 +6082,7 @@
 
               // Track lap times for all cars
               if (gameRunning) {
-                const currentTime = Date.now();
+                const currentTime = gameNow();
 
                 // Calculate and store lap time
                 if (car.currentLapStartTime > 0) {
@@ -5986,6 +6110,7 @@
                       // Check if this is also an all-time lap record
                       if (currentLapTime < lapRecord) {
                         lapRecord = currentLapTime;
+                        localStorage.setItem("circuitRacerLapRecord", String(lapRecord));
                         
                         // Show a lap record notification
                         const notification = document.createElement("div");
@@ -6049,32 +6174,6 @@
               console.log(
                 `${car.name || "Player"} completed lap ${car.lapsCompleted}`
               );
-            } else if (car.lapsCompleted === 0) {
-              // First time hitting start/finish - start first lap
-              // Store the timestamp when this lap was completed (for sorting)
-              car.lastLapCompletionTime = currentTime;
-              
-              car.lapsCompleted = 1;
-
-              // Initialize lap timing for all cars
-              if (gameRunning) {
-                const currentTime = Date.now();
-                car.currentLapStartTime = currentTime;
-
-                // Additional tracking for player car
-                if (car === player) {
-                  lapStartTime = currentTime;
-                }
-              }
-              car.currentCheckpoint = 1;
-              car.checkpointsHit = [true, false, false];
-
-              // Initialize lap timing for player
-              if (car === player && gameRunning) {
-                lapStartTime = Date.now();
-              }
-
-              console.log(`${car.name || "Player"} completed lap 1`);
             }
           }
 
@@ -6122,21 +6221,11 @@
           // Calculate final race progress for all cars
           calculateRaceProgress(finalStandings);
           
-          // Sort cars by race progress
-          finalStandings.sort((a, b) => {
-            // First sort by laps completed
-            if (b.lapsCompleted !== a.lapsCompleted) {
-              return b.lapsCompleted - a.lapsCompleted;
-            }
-
-            // Then by checkpoint within the same lap
-            if (b.currentCheckpoint !== a.currentCheckpoint) {
-              return b.currentCheckpoint - a.currentCheckpoint;
-            }
-
-            // If at same lap and checkpoint, sort by calculated race time
-            return a.calculatedTotalTime - b.calculatedTotalTime;
+          // Sort cars by distance covered around the circuit
+          finalStandings.forEach((car) => {
+            car.trackProgress = calculateTrackProgress(car);
           });
+          finalStandings.sort(compareRaceOrder);
           
           // Save position information
           finalStandings.forEach((car, index) => {
@@ -6166,7 +6255,7 @@
 
         // First, pre-calculate time gaps for each car relative to their total race time
         // This will be used for sorting within the same lap/checkpoint
-        const currentTime = Date.now();
+        const currentTime = gameNow();
 
         allCars.forEach((car) => {
           // Calculate total race time including current lap in progress
@@ -6184,35 +6273,10 @@
           }
         });
 
-        // Sort by laps completed, then by lap completion time within the same lap
-        allCars.sort((a, b) => {
-          // First sort by laps completed
-          if (b.lapsCompleted !== a.lapsCompleted) {
-            return b.lapsCompleted - a.lapsCompleted;
-          }
-
-          // Cars are on the same lap, determine who completed the previous lap first
-          // The one who completed the previous lap first should be ahead
-          if (a.lapsCompleted > 0) {
-            if (a.lastLapCompletionTime !== b.lastLapCompletionTime) {
-              return a.lastLapCompletionTime - b.lastLapCompletionTime;
-            }
-          }
-          
-          // If no lap completion time is available (first lap) or they somehow 
-          // completed the lap at exactly the same time, use checkpoints
-          if (b.currentCheckpoint !== a.currentCheckpoint) {
-            return b.currentCheckpoint - a.currentCheckpoint;
-          }
-          
-          // If they're on the same checkpoint of the first lap, use grid position
-          if (a.lapsCompleted === 0) {
-            return a.gridPosition - b.gridPosition;
-          }
-          
-          // Last resort: use calculated race time
-          return a.calculatedTotalTime - b.calculatedTotalTime;
+        allCars.forEach((car) => {
+          car.trackProgress = calculateTrackProgress(car);
         });
+        allCars.sort(compareRaceOrder);
 
         // Calculate time gaps to the leader for all cars
         const leader = allCars[0];
@@ -6256,6 +6320,88 @@
         updatePositionDisplay(finalSortedCars);
       }
 
+      let trackGeometry = null;
+
+      function getTrackGeometry() {
+        if (trackGeometry) return trackGeometry;
+        const points = track.waypoints;
+        const cumulative = [0];
+        for (let i = 1; i < points.length; i++) {
+          cumulative.push(
+            cumulative[i - 1] +
+              Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y)
+          );
+        }
+        const last = points[points.length - 1];
+        const totalLength =
+          cumulative[cumulative.length - 1] + Math.hypot(points[0].x - last.x, points[0].y - last.y);
+        trackGeometry = { points, cumulative, totalLength, checkpointDistances: [] };
+        trackGeometry.checkpointDistances = track.checkpoints.map((checkpoint, index) =>
+          index === 0 ? 0 : projectOntoTrack(checkpoint.x, checkpoint.y)
+        );
+        return trackGeometry;
+      }
+
+      // Distance along the racing line (from the start/finish line) of the closest point to (x, y)
+      function projectOntoTrack(x, y) {
+        const { points, cumulative } = trackGeometry;
+        let bestDistanceSq = Infinity;
+        let bestAlong = 0;
+        for (let i = 0; i < points.length; i++) {
+          const a = points[i];
+          const b = points[(i + 1) % points.length];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const lengthSq = dx * dx + dy * dy;
+          const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / lengthSq));
+          const px = a.x + t * dx;
+          const py = a.y + t * dy;
+          const distanceSq = (x - px) * (x - px) + (y - py) * (y - py);
+          if (distanceSq < bestDistanceSq) {
+            bestDistanceSq = distanceSq;
+            bestAlong = cumulative[i] + t * Math.sqrt(lengthSq);
+          }
+        }
+        return bestAlong;
+      }
+
+      // Total distance covered in the race, used to order the standings
+      function calculateTrackProgress(car) {
+        const geometry = getTrackGeometry();
+        const checkpointCount = track.checkpoints.length;
+        const nextIndex = car.currentCheckpoint % checkpointCount;
+        const previousIndex = (nextIndex + checkpointCount - 1) % checkpointCount;
+        const segmentStart = geometry.checkpointDistances[previousIndex];
+        const segmentEnd = nextIndex === 0 ? geometry.totalLength : geometry.checkpointDistances[nextIndex];
+        const segmentLength = segmentEnd - segmentStart;
+
+        let along =
+          (projectOntoTrack(car.x, car.y) - segmentStart + geometry.totalLength) % geometry.totalLength;
+        // Cars just behind the last checkpoint they passed (e.g. on the grid) count as slightly behind it
+        if (along > segmentLength + (geometry.totalLength - segmentLength) / 2) {
+          along -= geometry.totalLength;
+        }
+        along = Math.min(along, segmentLength);
+
+        return car.lapsCompleted * geometry.totalLength + segmentStart + along;
+      }
+
+      function compareRaceOrder(a, b) {
+        return b.trackProgress - a.trackProgress || a.gridPosition - b.gridPosition;
+      }
+
+      // Gap to the car ahead: the difference in when both passed the latest shared checkpoint,
+      // or an estimate from distance and speed before the first checkpoint
+      function estimateGapSeconds(carAhead, car) {
+        const passed = car.checkpointsPassed || 0;
+        const aheadPassTimes = carAhead.checkpointPassTimes || {};
+        if (passed > 0 && car.checkpointPassTimes && aheadPassTimes[passed] !== undefined) {
+          return (car.checkpointPassTimes[passed] - aheadPassTimes[passed]) / 1000;
+        }
+        const pixelsPerSecond = Math.max(carAhead.speed || 0, car.speed || 0, 1) * (1000 / SIMULATION_STEP_MS);
+        return (carAhead.trackProgress - car.trackProgress) / pixelsPerSecond;
+      }
+
       function calculateRaceProgress(allCars) {
         allCars.forEach((car) => {
           let baseProgress =
@@ -6286,9 +6432,9 @@
 
       function logPositionDebugInfo(allCars) {
         const shouldLog =
-          Math.floor(Date.now() / 1000) % 5 === 0 &&
+          Math.floor(gameNow() / 1000) % 5 === 0 &&
           (!this.lastDebugTime ||
-            Date.now() - (this.lastDebugTime || 0) > 5000);
+            gameNow() - (this.lastDebugTime || 0) > 5000);
 
         if (shouldLog) {
           // Format: POS | Name | Lap X/5 | Sector Y | Last Lap: MM:SS.sss | Gap: +X.Xs | Lap Completion Time | Raw Time
@@ -6335,7 +6481,7 @@
             .join("\n");
 
           console.log("RACE STANDINGS (EXACT TIMES):\n" + debugText);
-          this.lastDebugTime = Date.now();
+          this.lastDebugTime = gameNow();
         }
       }
 
@@ -6419,20 +6565,20 @@
         const timeDisplay = `${minutes}:${seconds.padStart(6, "0")}`;
         
         // Get team code (3 letters)
-        const teamCode = record.teamName ? record.teamName.substring(0, 3).toUpperCase() : 'N/A';
+        const teamCode = record.teamName ? String(record.teamName).substring(0, 3).toUpperCase() : 'N/A';
         
         // Format date
         const dateDisplay = record.date;
         
-        const nameColor = isCurrentPlayer ? "var(--primary-color)" : "#ffffff";
+        const nameColor = isCurrentPlayer ? "var(--primary-text-color, var(--primary-color))" : "#ffffff";
 
         // Format: position  team-code  player-name  lap-time  date
         div.innerHTML = `
           <span style="color: var(--text-primary); font-weight: 600; width: 18px; display: inline-block;">${position}</span>
-          <span style="color: var(--accent-color); font-weight: 400; width: 30px; display: inline-block; font-size: 0.8em;">${teamCode}</span>
-          <span style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${record.name}</span>
+          <span style="color: var(--accent-color); font-weight: 400; width: 30px; display: inline-block; font-size: 0.8em;">${escapeHtml(teamCode)}</span>
+          <span style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${escapeHtml(record.name)}</span>
           <span style="color: var(--accent-color); width: 60px; display: inline-block; font-family: monospace;">${timeDisplay}</span>
-          <span style="color: var(--text-secondary); width: 70px; display: inline-block; font-size: 0.75em;">${dateDisplay}</span>
+          <span style="color: var(--text-secondary); width: 70px; display: inline-block; font-size: 0.75em;">${escapeHtml(dateDisplay)}</span>
         `;
 
         return div;
@@ -6479,12 +6625,12 @@
           }
         }
         
-        const carNameColor = car.isPlayer ? "var(--primary-color)" : "#ffffff";
+        const carNameColor = car.isPlayer ? "var(--primary-text-color, var(--primary-color))" : "#ffffff";
 
         // Format: position  3-letter-abbreviation  lap-progress  last-lap-time  gap-to-leader
         div.innerHTML = `
           <span style="color: var(--text-primary); font-weight: 600; width: 30px; display: inline-block;">${position}</span>
-          <span style="color: ${carNameColor}; font-weight: ${car.isPlayer ? "700" : "400"}; width: 50px; display: inline-block;">${teamCode}</span>
+          <span style="color: ${carNameColor}; font-weight: ${car.isPlayer ? "700" : "400"}; width: 50px; display: inline-block;">${escapeHtml(teamCode)}</span>
           <span style="color: var(--text-primary); width: 40px; display: inline-block;">${lapInfo}${lapEntryIndicator}</span>
           <span style="color: var(--text-primary); width: 80px; display: inline-block;">${lastLapDisplay}</span>
           <span style="color: var(--text-secondary); width: 80px; display: inline-block;">${gapText}</span>
@@ -6498,28 +6644,9 @@
           return "+0.000s";
         }
 
-        // Get the car immediately ahead in the race order
         const carAhead = allCars[index - 1];
-        
-        // Calculate gap to the car ahead (not to the leader)
-        let gapInSeconds = 0;
-        
-        // If on the same lap, calculate direct time difference based on last lap completion
-        if (car.lapsCompleted === carAhead.lapsCompleted) {
-            // Use last lap completion time to calculate the gap
-            if (car.lastLapCompletionTime && carAhead.lastLapCompletionTime) {
-                // Convert from milliseconds to seconds
-                gapInSeconds = (car.lastLapCompletionTime - carAhead.lastLapCompletionTime) / 1000;
-            } else {
-                // Fallback to calculated total race time
-                gapInSeconds = car.calculatedTotalTime - carAhead.calculatedTotalTime;
-            }
-        } else {
-            // If on different laps, use the gap to leader (simpler to understand)
-            const leader = allCars[0];
-            gapInSeconds = calculateGapInSeconds(leader, car, index);
-        }
-        
+        let gapInSeconds = estimateGapSeconds(carAhead, car);
+
         // Ensure we don't show negative gaps (shouldn't happen, but just in case)
         gapInSeconds = Math.max(0, gapInSeconds);
 
@@ -6556,7 +6683,7 @@
         let currentCarRaceTime = currentCar.totalRaceTime || 0;
 
         // Add current lap progress time for both cars
-        const currentTime = Date.now();
+        const currentTime = gameNow();
 
         // Add the time of the current lap in progress
         let leaderCurrentLapTime = 0;
@@ -6736,7 +6863,7 @@
 
       // Helper function to check if car is in starting area during race start
       function isInStartingAreaDuringRaceStart(car) {
-        const raceTime = gameRunning ? (Date.now() - raceStartTime) / 1000 : 0;
+        const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
         const startFinishArea = {
           centerX: 1000,
           centerY: 1300,
@@ -7333,7 +7460,7 @@
       }
 
       function setupCarRendering(car, dimensions) {
-        const raceTime = gameRunning ? (Date.now() - raceStartTime) / 1000 : 0;
+        const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
         const isGhosted =
           car.lapsCompleted === 0 &&
           car.currentCheckpoint <= 2 &&
@@ -7645,7 +7772,7 @@
           ctx.beginPath();
           ctx.arc(
             -width / 2 - 5 + i * 2,
-            Math.sin(Date.now() * 0.01 + i) * 3,
+            Math.sin(gameNow() * 0.01 + i) * 3,
             2 + Math.random() * 2,
             0,
             2 * Math.PI
@@ -7795,10 +7922,10 @@
               adriatic_racing: "ADR",
               liberty_racing: "LBR",
               rising_sun: "RSM",
-              celestial_motors: "CEL",
+              celestial_motors: "CEM",
               maharaja_motors: "MHJ",
               samba_racing: "SRT",
-              velocidad_venezuela: "VEV",
+              velocidad_venezuela: "VVR",
               regina_curse: "RGC",
             };
             return teamIdMap[selectedTeam] || "PLR";
@@ -7821,10 +7948,10 @@
             "Adriatic Racing": "ADR",
             "Liberty Racing": "LBR",
             "Rising Sun Motors": "RSM",
-            "Celestial Motors": "CEL",
+            "Celestial Motors": "CEM",
             "Maharaja Motors": "MHJ",
             "Samba Racing Team": "SRT",
-            "Velocidad Venezuela": "VEV",
+            "Velocidad Venezuela": "VVR",
             "Regina Curse": "RGC",
           };
 
@@ -7837,15 +7964,7 @@
 
       // Draw tire marks
       function drawTireMarks() {
-        tireMarks.forEach((mark, index) => {
-          mark.age++;
-          mark.alpha -= 0.005;
-
-          if (mark.alpha <= 0) {
-            tireMarks.splice(index, 1);
-            return;
-          }
-
+        tireMarks.forEach((mark) => {
           ctx.save();
           ctx.globalAlpha = mark.alpha;
           ctx.translate(mark.x, mark.y);
@@ -7859,18 +7978,7 @@
 
       // Draw sparkles
       function drawSparkles() {
-        sparkles.forEach((sparkle, index) => {
-          sparkle.life--;
-          sparkle.x += sparkle.vx;
-          sparkle.y += sparkle.vy;
-          sparkle.vx *= 0.98;
-          sparkle.vy *= 0.98;
-
-          if (sparkle.life <= 0) {
-            sparkles.splice(index, 1);
-            return;
-          }
-
+        sparkles.forEach((sparkle) => {
           ctx.save();
           ctx.globalAlpha = sparkle.life / sparkle.maxLife;
           ctx.fillStyle = "#ffff00";
@@ -7883,19 +7991,7 @@
 
       // Draw flame effects
       function drawFlames() {
-        flames.forEach((flame, index) => {
-          flame.life--;
-          flame.x += flame.vx;
-          flame.y += flame.vy;
-          flame.vx *= 0.95;
-          flame.vy *= 0.95;
-          flame.size *= 0.98;
-
-          if (flame.life <= 0 || flame.size < 0.5) {
-            flames.splice(index, 1);
-            return;
-          }
-
+        flames.forEach((flame) => {
           const alpha = flame.life / flame.maxLife;
           ctx.save();
           ctx.globalAlpha = alpha;
@@ -7981,7 +8077,7 @@
         // Update lap time displays
         if (gameRunning) {
           // Current lap time
-          const currentTime = Date.now();
+          const currentTime = gameNow();
           if (lapStartTime > 0) {
             currentLapTime = (currentTime - lapStartTime) / 1000;
             const lapMinutes = Math.floor(currentLapTime / 60);
@@ -8046,7 +8142,7 @@
         document.getElementById("damageBar").style.background = `rgb(${dmgRedComponent}, ${dmgGreenComponent}, 0)`;
 
         if (gameRunning) {
-          const elapsed = (Date.now() - raceStartTime) / 1000;
+          const elapsed = (gameNow() - raceStartTime) / 1000;
           const minutes = Math.floor(elapsed / 60);
           const seconds = Math.floor(elapsed % 60);
           const milliseconds = Math.floor((elapsed % 1) * 1000);
@@ -8081,8 +8177,9 @@
               indicator.id = "ghostingIndicator";
               indicator.style.cssText = `
                             position: absolute;
-                            top: 120px;
-                            left: 20px;
+                            top: 20px;
+                            left: 50%;
+                            transform: translateX(-50%);
                             background: rgba(0, 123, 255, 0.9);
                             color: white;
                             padding: 8px 12px;
@@ -8094,7 +8191,7 @@
                             animation: ghostPulse 2s infinite;
                             z-index: 1000;
                         `;
-              indicator.textContent = "🛡️ COLLISION PROTECTION ACTIVE";
+              indicator.textContent = "COLLISION PROTECTION ACTIVE";
               document.body.appendChild(indicator);
 
               // Add CSS animation if not already added
@@ -8103,8 +8200,8 @@
                 style.id = "ghostingAnimation";
                 style.textContent = `
                                 @keyframes ghostPulse {
-                                    0%, 100% { opacity: 1; transform: scale(1); }
-                                    50% { opacity: 0.7; transform: scale(1.05); }
+                                    0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+                                    50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
                                 }
                             `;
                 document.head.appendChild(style);
@@ -8123,7 +8220,7 @@
         let finalRaceTime = player.totalRaceTime;
         // Add final lap time if it was in progress
         if (player.currentLapStartTime > 0) {
-          const finalLapTime = (Date.now() - player.currentLapStartTime) / 1000;
+          const finalLapTime = (gameNow() - player.currentLapStartTime) / 1000;
           finalRaceTime += finalLapTime;
         }
 
@@ -8173,21 +8270,22 @@
         updateRaceCompleteLeaderboard();
 
         // Calculate position in leaderboard and splits
-        const sortedLeaderboard = [...leaderboard].sort(
-          (a, b) => a.time - b.time
-        );
+        const sortedLeaderboard = getCurrentConditionsLeaderboard();
+        const candidateEntry = { position: player.racePosition, time: currentRaceTime };
         const isNewRecord =
-          leaderboard.length < 10 ||
-          currentRaceTime < sortedLeaderboard[sortedLeaderboard.length - 1]?.time;
+          sortedLeaderboard.length < LEADERBOARD_SIZE ||
+          compareRaceEntries(candidateEntry, sortedLeaderboard[sortedLeaderboard.length - 1]) < 0;
         const recordTime = sortedLeaderboard[0]?.time;
+        const beatsBestResult =
+          sortedLeaderboard.length > 0 && compareRaceEntries(candidateEntry, sortedLeaderboard[0]) < 0;
 
         if (isNewRecord) {
-          if (recordTime && currentRaceTime < recordTime) {
+          if (beatsBestResult) {
             // New fastest time
             document.getElementById("newRecordText").textContent =
-              "NEW FASTEST TIME";
+              "NEW BEST RESULT";
             document.getElementById("newRecordText").style.display = "block";
-          } else if (leaderboard.length < 10) {
+          } else if (sortedLeaderboard.length < LEADERBOARD_SIZE) {
             // Made it to top 10
             document.getElementById("newRecordText").textContent =
               "LEADERBOARD POSITION!";
@@ -8204,7 +8302,7 @@
           // Calculate leaderboard position if this time was added
           let position = 1;
           for (const entry of sortedLeaderboard) {
-            if (currentRaceTime > entry.time) {
+            if (compareRaceEntries(candidateEntry, entry) > 0) {
               position++;
             } else {
               break;
@@ -8244,8 +8342,7 @@
       // Store final race standings when race completes
       let finalRaceStandings = [];
       
-      function gameLoop() {
-        if (gameRunning) {
+      function updateSimulationStep() {
           // Update player car physics and input handling
           updatePlayer();
 
@@ -8275,6 +8372,52 @@
 
           // Update weather effects (rain particles, etc.)
           updateRainParticles();
+      }
+
+      function updateEffects() {
+        for (let i = tireMarks.length - 1; i >= 0; i--) {
+          const mark = tireMarks[i];
+          mark.age++;
+          mark.alpha -= 0.005;
+          if (mark.alpha <= 0) tireMarks.splice(i, 1);
+        }
+        for (let i = sparkles.length - 1; i >= 0; i--) {
+          const sparkle = sparkles[i];
+          sparkle.life--;
+          sparkle.x += sparkle.vx;
+          sparkle.y += sparkle.vy;
+          sparkle.vx *= 0.98;
+          sparkle.vy *= 0.98;
+          if (sparkle.life <= 0) sparkles.splice(i, 1);
+        }
+        for (let i = flames.length - 1; i >= 0; i--) {
+          const flame = flames[i];
+          flame.life--;
+          flame.x += flame.vx;
+          flame.y += flame.vy;
+          flame.vx *= 0.95;
+          flame.vy *= 0.95;
+          flame.size *= 0.98;
+          if (flame.life <= 0 || flame.size < 0.5) flames.splice(i, 1);
+        }
+      }
+
+      function gameLoop(timestamp) {
+        const frameTimestamp = timestamp ?? performance.now();
+        const frameDeltaMs =
+          lastFrameTimestamp === null
+            ? 0
+            : Math.min(MAX_FRAME_DELTA_MS, frameTimestamp - lastFrameTimestamp);
+        lastFrameTimestamp = frameTimestamp;
+        simulationAccumulatorMs += frameDeltaMs;
+
+        while (simulationAccumulatorMs >= SIMULATION_STEP_MS) {
+          simulationAccumulatorMs -= SIMULATION_STEP_MS;
+          if (gameRunning) {
+            simulationTimeMs += SIMULATION_STEP_MS;
+            updateSimulationStep();
+          }
+          updateEffects();
         }
 
         // Apply camera transformation matrix for world-space rendering
@@ -8320,7 +8463,7 @@
         document.querySelector(".leaderboard").style.display = "none";
 
         gameRunning = true;
-        raceStartTime = Date.now();
+        raceStartTime = gameNow();
         currentLap = 1;
         raceComplete = false;
         
@@ -8328,7 +8471,7 @@
         finalRaceStandings = [];
 
         // Reset lap timing
-        lapStartTime = 0;
+        lapStartTime = raceStartTime;
         currentLapTime = 0;
         bestLapTime = Number.MAX_VALUE; // Reset best lap time for this race
         lastLapTime = 0; // Reset last lap time
@@ -8336,7 +8479,9 @@
 
         // Reset lap timing and race properties for player
         player.lapTimes = [];
-        player.currentLapStartTime = 0;
+        player.currentLapStartTime = raceStartTime;
+        player.checkpointsPassed = 0;
+        player.checkpointPassTimes = {};
         player.totalRaceTime = 0;
         player.checkpointTimes = {};
         player.calculatedTotalTime = 0;
@@ -8439,6 +8584,9 @@
           
           // Create AI cars
           createAICars();
+          aiCars.forEach((car) => {
+            car.currentLapStartTime = raceStartTime;
+          });
         }
 
         // Initialize weather effects for the race

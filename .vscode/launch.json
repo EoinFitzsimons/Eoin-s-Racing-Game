@@ -8,14 +8,14 @@
       "type": "chrome",
       "request": "launch",
       "name": "Open Game in Chrome",
-      "file": "${workspaceFolder}/Eoin'sRacingGame.html",
+      "file": "${workspaceFolder}/index.html",
       "webRoot": "${workspaceFolder}"
     },
     {
       "type": "msedge",
       "request": "launch",
       "name": "Open Racing Game in Edge",
-      "file": "${workspaceFolder}/Racing Game.html",
+      "file": "${workspaceFolder}/index.html",
       "webRoot": "${workspaceFolder}"
     }
   ]

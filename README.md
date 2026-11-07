@@ -78,15 +78,15 @@ Each team features:
 - **Broadcast-style bottom bar** with live race statistics
 - **Real-time telemetry** displaying speed, position, and lap times
 - **Live standings** showing current race positions
-- **Leaderboard system** for best lap times
+- **Leaderboards** for race results (per weather and difficulty) and time trial laps, saved in your browser
 - **Professional timing system** with millisecond precision
 
 ### 🎯 Game Modes
 
 - **Team Selection** - Choose your racing team with carousel interface
 - **Championship Mode** - Complete 5-lap races against AI opponents
-- **Time Trial** - Set personal best lap times
-- **Leaderboard Competition** - Compete for fastest lap records
+- **Time Trial** - Set the fastest single lap from a standing start
+- **Leaderboard Competition** - Export and import time trial records to compare with friends
 
 ## 🎮 Controls
 
@@ -149,19 +149,18 @@ Each team features:
 
 - Precise millisecond timing for lap records
 - Personal best tracking
-- Global leaderboard for fastest times
+- Local leaderboards and an all-time lap record stored in your browser
 
 ## 🛠️ Technical Features
 
 ### **Responsive Design**
 
 - Fully responsive interface for all screen sizes
-- Mobile-optimized controls and layout
 - Adaptive UI elements for different devices
 
 ### **Performance Optimized**
 
-- Smooth 60fps gameplay
+- Fixed-step physics, so speed and lap times are the same at any refresh rate
 - Efficient canvas rendering
 - Optimized collision detection algorithms
 
@@ -177,11 +176,10 @@ Each team features:
 - **Firefox**
 - **Safari**
 - **Edge**
-- **Mobile Browsers** (iOS Safari, Chrome Mobile)
 
 ## 🎯 Installation & Setup
 
-1. **Download** the `Racing Game.html` file
+1. **Download** the `index.html` file (or clone the repository)
 2. **Open** in any modern web browser
 3. **Start Playing** - No additional setup required!
 
@@ -196,13 +194,10 @@ Each team features:
 
 ### **Team Selection**
 
-- **Kaiser Motorsport** - Highest speed (95) and acceleration (90), solid all-around performance
-- **Celestial Motors** - High speed (90) with excellent acceleration (88), lower handling
-- **Veloce Italia** - Great speed (90) with superior handling (91), moderate acceleration
-- **Iberian Speed** - Maximum speed focus (92), balanced handling, lower acceleration
-- **Highland Racing Team** - Exceptional handling (93), good acceleration, moderate speed
-- **Tricolore Racing** - Well-balanced across all attributes (89/87/89)
-- **Emerald Isle Racing** - Perfect balance with equal stats across all categories (85/85/85)
+- Every team has a speed, acceleration and handling rating out of 20 (see the table above)
+- **Fast teams** suit long straights and nitro overtakes
+- **High-handling teams** are more forgiving in the rain and through tight corners
+- **Balanced teams** are a good starting point while learning the track
 
 ### **Lap Record Strategy**
 
@@ -230,7 +225,7 @@ Each team features:
 - **Multiple Tracks** - Additional circuit layouts
 - **Multiplayer Mode** - Online racing competitions
 - **Car Upgrades** - Performance enhancement system
-- **Weather Effects** - Dynamic racing conditions
+- **Changing Weather** - Conditions that change during a race
 - **Career Mode** - Progressive championship seasons
 
 ## 🤝 Contributing
