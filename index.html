@@ -8405,7 +8405,7 @@
       function gameLoop(timestamp) {
         const frameTimestamp = timestamp ?? performance.now();
         const frameDeltaMs =
-          lastFrameTimestamp === null
+          lastFrameTimestamp === null || document.hidden
             ? 0
             : Math.min(MAX_FRAME_DELTA_MS, frameTimestamp - lastFrameTimestamp);
         lastFrameTimestamp = frameTimestamp;
