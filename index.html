@@ -6396,7 +6396,9 @@
         const passed = car.checkpointsPassed || 0;
         const aheadPassTimes = carAhead.checkpointPassTimes || {};
         if (passed > 0 && car.checkpointPassTimes && aheadPassTimes[passed] !== undefined) {
-          return (car.checkpointPassTimes[passed] - aheadPassTimes[passed]) / 1000;
+          const checkpointGap = (car.checkpointPassTimes[passed] - aheadPassTimes[passed]) / 1000;
+          // A negative gap means the order changed since the checkpoint, so estimate from distance instead
+          if (checkpointGap > 0) return checkpointGap;
         }
         const pixelsPerSecond = Math.max(carAhead.speed || 0, car.speed || 0, 1) * (1000 / SIMULATION_STEP_MS);
         return (carAhead.trackProgress - car.trackProgress) / pixelsPerSecond;
