@@ -1725,6 +1725,26 @@
           font-size: 0.68rem;
         }
 
+        /* Time trial rows drop the date and shorten long names to fit */
+        .time-trial-item {
+          gap: 4px;
+        }
+
+        .time-trial-item > span {
+          flex-shrink: 0;
+        }
+
+        .time-trial-item .time-trial-name {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .time-trial-item .time-trial-date {
+          display: none !important;
+        }
+
         /* Show the top five and the player's own row */
         .position-item:nth-child(n + 6):not(.player-pos) {
           display: none;
@@ -7028,7 +7048,7 @@
 
       function createTimeTrialDisplayItem(record, index) {
         const div = document.createElement("div");
-        div.className = "position-item";
+        div.className = "position-item time-trial-item";
         
         // Check if this is the current player's record
         const isCurrentPlayer = record.name === getSelectedTeamName();
@@ -7055,9 +7075,9 @@
         div.innerHTML = `
           <span style="color: var(--text-primary); font-weight: 600; width: 18px; display: inline-block;">${position}</span>
           <span style="color: var(--accent-color); font-weight: 400; width: 30px; display: inline-block; font-size: 0.8em;">${escapeHtml(teamCode)}</span>
-          <span style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${escapeHtml(record.name)}</span>
+          <span class="time-trial-name" style="color: ${nameColor}; font-weight: ${isCurrentPlayer ? "700" : "400"}; width: 65px; display: inline-block; font-size: 0.85em;">${escapeHtml(record.name)}</span>
           <span style="color: var(--accent-color); width: 60px; display: inline-block; font-family: monospace;">${timeDisplay}</span>
-          <span style="color: var(--text-secondary); width: 70px; display: inline-block; font-size: 0.75em;">${escapeHtml(dateDisplay)}</span>
+          <span class="time-trial-date" style="color: var(--text-secondary); width: 70px; display: inline-block; font-size: 0.75em;">${escapeHtml(dateDisplay)}</span>
         `;
 
         return div;
