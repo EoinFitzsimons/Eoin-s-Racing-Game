@@ -4541,6 +4541,40 @@
       }
       track.path = buildTrackPath(track.waypoints);
 
+      // Starting grid: two cars per row, laid out backwards along the circuit from the start line
+      const GRID_ROW_SPACING = 35;
+      const GRID_LANE_OFFSET = 30;
+      const GRID_FIRST_ROW_DISTANCE = 50;
+
+      function trackPoseBehindStart(distance) {
+        const path = track.path;
+        const count = path.length;
+        let remaining = distance;
+        for (let step = 0; step < count; step++) {
+          const ahead = path[(count - step) % count];
+          const behind = path[(count - step - 1) % count];
+          const segment = Math.hypot(ahead.x - behind.x, ahead.y - behind.y);
+          const angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x);
+          if (segment >= remaining) {
+            const t = segment > 0 ? remaining / segment : 0;
+            return { x: ahead.x + (behind.x - ahead.x) * t, y: ahead.y + (behind.y - ahead.y) * t, angle };
+          }
+          remaining -= segment;
+        }
+        return { x: path[0].x, y: path[0].y, angle: -Math.PI / 2 };
+      }
+
+      function gridSlotPose(row, side) {
+        // The left-hand car of each row sits slightly ahead, as on a real grid
+        const pose = trackPoseBehindStart(GRID_FIRST_ROW_DISTANCE + row * GRID_ROW_SPACING + (side === 0 ? -3 : 3));
+        const lane = (side === 0 ? -1 : 1) * GRID_LANE_OFFSET;
+        return {
+          x: pose.x - Math.sin(pose.angle) * lane,
+          y: pose.y + Math.cos(pose.angle) * lane,
+          angle: pose.angle,
+        };
+      }
+
       // Rendering happens between fixed simulation steps, so poses are blended from the previous step
       let renderAlpha = 1;
 
@@ -5680,9 +5714,7 @@
           // Player starts at front (row 0), AI cars start behind in rows 1, 2, 3, etc.
           const gridRow = Math.floor(i / 2) + 1; // Start from row 1 (player is row 0)
           const gridSide = i % 2;
-
-          // Stagger the grid positions slightly for more realistic racing start
-          const staggerOffset = gridSide === 0 ? -3 : 3; // Left cars slightly ahead
+          const slot = gridSlotPose(gridRow, gridSide);
 
           // Calculate team multipliers from attributes (scale: 1-20, normalized to 1.0-2.0 for better performance)
           // Apply difficulty multiplier to AI car attributes
@@ -5694,10 +5726,10 @@
           const tireMultiplier = (0.4 + (team.attributes.tireManagement / 20) * 1.2) * difficultyMultiplier;
 
           const aiCar = {
-            x: 1000 + (gridSide === 0 ? -30 : 30), // Grid spacing left/right of centerline
-            y: 1350 + gridRow * 35 + staggerOffset, // Position BEHIND start/finish line (at y=1300)
-            angle: -Math.PI / 2, // Point upward initially
-            velocity: { x: 0, y: -0.1 }, // Small initial velocity pointing upward (negative Y)
+            x: slot.x, // Grid slot behind the start line, following the circuit
+            y: slot.y,
+            angle: slot.angle, // Facing along the track
+            velocity: { x: Math.cos(slot.angle) * 0.1, y: Math.sin(slot.angle) * 0.1 }, // Small initial roll forwards
             speed: 0.1, // Small initial speed
             isSliding: false, // Flag to track when car is sliding/drifting
             // Core performance stats affected by team attributes
@@ -7982,16 +8014,6 @@
         g.lineCap = "round";
       }
 
-      function distanceToTrackCentre(x, y) {
-        let best = Infinity;
-        for (let i = 0; i < track.path.length; i++) {
-          const current = track.path[i];
-          const next = track.path[(i + 1) % track.path.length];
-          best = Math.min(best, distanceToLineSegmentWithInfo(x, y, current.x, current.y, next.x, next.y).distance);
-        }
-        return best;
-      }
-
       function trackDirectionAt(x, y) {
         let best = 0;
         let bestDistance = Infinity;
@@ -8024,17 +8046,16 @@
         }
         g.restore();
 
-        // Grid slots match the AI starting positions behind the line, where those sit on the tarmac
+        // Grid slots match the AI starting positions, which follow the circuit back from the line
         g.strokeStyle = "rgba(255,255,255,0.7)";
         g.lineWidth = 1.5;
-        for (let row = 1; row <= 8; row++) {
-          for (const side of [-1, 1]) {
-            const x = 1000 + side * 30;
-            const y = 1350 + row * 35 + side * 3;
-            if (distanceToTrackCentre(x, y) <= track.width / 2 - 22) {
-              g.strokeRect(x - 7, y - 13, 14, 26);
-            }
-          }
+        for (let i = 0; i < aiTeams.length - 1; i++) {
+          const slot = gridSlotPose(Math.floor(i / 2) + 1, i % 2);
+          g.save();
+          g.translate(slot.x, slot.y);
+          g.rotate(slot.angle);
+          g.strokeRect(-13, -7, 26, 14);
+          g.restore();
         }
       }
 
