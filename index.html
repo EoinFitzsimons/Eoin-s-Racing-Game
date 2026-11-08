@@ -4564,6 +4564,23 @@
         return { x: path[0].x, y: path[0].y, angle: -Math.PI / 2 };
       }
 
+      // The first waypoint in front of a grid slot, so cars on the final bend follow it instead of cutting across
+      function firstWaypointAhead(pose) {
+        const count = track.waypoints.length;
+        let nearest = 0;
+        let nearestDistance = Infinity;
+        track.waypoints.forEach((point, index) => {
+          const distance = Math.hypot(point.x - pose.x, point.y - pose.y);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = index;
+          }
+        });
+        const point = track.waypoints[nearest];
+        const ahead = (point.x - pose.x) * Math.cos(pose.angle) + (point.y - pose.y) * Math.sin(pose.angle) > 10;
+        return ahead ? nearest : (nearest + 1) % count;
+      }
+
       function gridSlotPose(row, side) {
         // The left-hand car of each row sits slightly ahead, as on a real grid
         const pose = trackPoseBehindStart(GRID_FIRST_ROW_DISTANCE + row * GRID_ROW_SPACING + (side === 0 ? -3 : 3));
@@ -5749,7 +5766,7 @@
             checkpointsHit: [true, false, false],
             lapProgress: 0,
             lapsCompleted: 0,
-            targetWaypoint: 1,
+            targetWaypoint: firstWaypointAhead(slot),
             racePosition: i + 2,
             gridPosition: i + 1, // Grid position for race start ordering
             // Damage and wear system (reset to zero for new race)
