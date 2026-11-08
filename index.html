@@ -1580,6 +1580,27 @@
         max-width: 100%;
       }
 
+      /* Time trial rows in the rail: shorten long names and drop the date so the time fits */
+      .hud-rail .time-trial-item {
+        gap: 4px;
+      }
+
+      .hud-rail .time-trial-item > span {
+        flex-shrink: 0;
+      }
+
+      .hud-rail .time-trial-item .time-trial-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .hud-rail .time-trial-item .time-trial-date {
+        display: none;
+      }
+
       .hud-rail .position-item[style*="center"] {
         display: block;
         height: auto;
