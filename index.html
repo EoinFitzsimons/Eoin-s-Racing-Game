@@ -2271,6 +2271,9 @@
         <button class="mode-btn landscape-btn" type="button" onclick="enterLandscapeFullscreen()">
           Full Screen
         </button>
+        <button class="mode-btn sound-toggle" type="button" onclick="toggleSound()" aria-pressed="true">
+          Sound: On
+        </button>
 
         <!-- Time Trial Controls (hidden by default) -->
         <div id="timeTrialControls" style="display: none;">
@@ -3328,8 +3331,9 @@
        * All subsequent drawing will be offset by camera position.
        */
       function applyCameraTransform() {
+        const view = cameraRenderPosition();
         ctx.save();
-        ctx.translate(-camera.x, -camera.y);
+        ctx.translate(-view.x, -view.y);
       }
 
       /**
@@ -3689,6 +3693,7 @@
       function setWeather(type) {
         // Update the game weather
         gameWeather = type;
+        trackLayer = null;
         
         // Update UI
         document.querySelectorAll('.weather-btn').forEach(btn => {
@@ -3904,6 +3909,10 @@
       const keys = {};
       document.addEventListener("keydown", (e) => {
         keys[e.code] = true;
+
+        if (e.code === "KeyM" && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+          toggleSound();
+        }
 
         // Carousel navigation in team selection screen
         if (
@@ -4214,6 +4223,68 @@
 
       // AI cars
       const aiCars = [];
+
+      // Smooth centreline through the waypoints (centripetal Catmull-Rom), used for drawing and surface checks
+      function buildTrackPath(waypoints, samplesPerSegment = 8) {
+        const count = waypoints.length;
+        const lerpPoint = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        const knot = (a, b) => Math.sqrt(Math.hypot(b.x - a.x, b.y - a.y)) || 0.001;
+        const path = [];
+        for (let i = 0; i < count; i++) {
+          const p0 = waypoints[(i - 1 + count) % count];
+          const p1 = waypoints[i];
+          const p2 = waypoints[(i + 1) % count];
+          const p3 = waypoints[(i + 2) % count];
+          const t0 = 0;
+          const t1 = t0 + knot(p0, p1);
+          const t2 = t1 + knot(p1, p2);
+          const t3 = t2 + knot(p2, p3);
+          for (let s = 0; s < samplesPerSegment; s++) {
+            const t = t1 + ((t2 - t1) * s) / samplesPerSegment;
+            const a1 = lerpPoint(p0, p1, (t - t0) / (t1 - t0));
+            const a2 = lerpPoint(p1, p2, (t - t1) / (t2 - t1));
+            const a3 = lerpPoint(p2, p3, (t - t2) / (t3 - t2));
+            const b1 = lerpPoint(a1, a2, (t - t0) / (t2 - t0));
+            const b2 = lerpPoint(a2, a3, (t - t1) / (t3 - t1));
+            path.push(lerpPoint(b1, b2, (t - t1) / (t2 - t1)));
+          }
+        }
+        return path;
+      }
+      track.path = buildTrackPath(track.waypoints);
+
+      // Rendering happens between fixed simulation steps, so poses are blended from the previous step
+      let renderAlpha = 1;
+
+      function snapshotRenderState() {
+        for (const car of [player, ...aiCars]) {
+          car.prevX = car.x;
+          car.prevY = car.y;
+          car.prevAngle = car.angle;
+        }
+        camera.prevX = camera.x;
+        camera.prevY = camera.y;
+      }
+
+      function renderPose(car) {
+        if (car.prevX === undefined || renderAlpha >= 1) {
+          return { x: car.x, y: car.y, angle: car.angle };
+        }
+        return {
+          x: car.prevX + (car.x - car.prevX) * renderAlpha,
+          y: car.prevY + (car.y - car.prevY) * renderAlpha,
+          angle: car.prevAngle + normalizeAngle(car.angle - car.prevAngle) * renderAlpha,
+        };
+      }
+
+      function cameraRenderPosition() {
+        if (camera.prevX === undefined || renderAlpha >= 1) return { x: camera.x, y: camera.y };
+        return {
+          x: camera.prevX + (camera.x - camera.prevX) * renderAlpha,
+          y: camera.prevY + (camera.y - camera.prevY) * renderAlpha,
+        };
+      }
+
 
       // Team system with 6 attributes (1-20 scale, 60 total points per team)
       const aiTeams = [
@@ -5525,6 +5596,7 @@
         const collisionX = (car1.x + car2.x) / 2;
         const collisionY = (car1.y + car2.y) / 2;
         addSparkle(collisionX, collisionY);
+        playImpactSound(collisionX, collisionY, relativeSpeed / 5);
 
         // Set collision timestamps
         car1.lastCollisionTime = gameNow();
@@ -5685,6 +5757,10 @@
         }
 
         handleNitroSystem(inputs);
+        player.throttleInput = Math.min(1, inputs.acceleration);
+        player.brakeInput = inputs.braking > 0 ? 1 : 0;
+        player.steerInput = inputs.steering;
+        player.steerAngle = (player.steerAngle || 0) + (inputs.steering * 0.42 - (player.steerAngle || 0)) * 0.35;
         handleSteering(inputs.steering, currentSpeed);
         handleAcceleration(inputs.acceleration);
         handleBraking(inputs.braking, currentSpeed);
@@ -6286,6 +6362,9 @@
        * This function integrates all physics forces acting on the car each frame.
        */
       function updatePhysics(ai, steerAmount) {
+        const steerTarget = Math.max(-1, Math.min(1, steerAmount * 2.5)) * 0.42;
+        ai.steerAngle = (ai.steerAngle || 0) + (steerTarget - (ai.steerAngle || 0)) * 0.35;
+
         // Update position based on current velocity vectors
         ai.x += ai.velocity.x;
         ai.y += ai.velocity.y;
@@ -7265,9 +7344,9 @@
         let minDistance = Infinity;
         let nearestSegment = null;
 
-        for (let i = 0; i < track.waypoints.length; i++) {
-          const current = track.waypoints[i];
-          const next = track.waypoints[(i + 1) % track.waypoints.length];
+        for (let i = 0; i < track.path.length; i++) {
+          const current = track.path[i];
+          const next = track.path[(i + 1) % track.path.length];
 
           // Distance from point to line segment
           const segmentInfo = distanceToLineSegmentWithInfo(
@@ -7404,9 +7483,9 @@
         let minDistance = Infinity;
         let bestSegmentInfo = null;
 
-        for (let i = 0; i < track.waypoints.length; i++) {
-          const current = track.waypoints[i];
-          const next = track.waypoints[(i + 1) % track.waypoints.length];
+        for (let i = 0; i < track.path.length; i++) {
+          const current = track.path[i];
+          const next = track.path[(i + 1) % track.path.length];
 
           const segmentInfo = distanceToLineSegmentWithInfo(
             car.x,
@@ -7507,8 +7586,11 @@
           return;
         }
 
-        if (!isPointOnTrack(car.x, car.y)) {
+        const onTrack = isPointOnTrack(car.x, car.y);
+        car.surface = (window.lastTrackSurfaceInfo && window.lastTrackSurfaceInfo.surface) || "asphalt";
+        if (!onTrack) {
           addSparkle(car.x, car.y);
+          playOffTrackSound(car);
 
           const surfaceInfo = window.lastTrackSurfaceInfo || {
             surface: "grass",
@@ -7547,648 +7629,508 @@
       /**
        * Track Rendering System
        *
-       * Renders the racing circuit with multiple visual layers and surface types.
-       * Uses optimized viewport culling to only draw visible portions of the large track.
-       *
-       * Rendering Layers (back to front):
-       * 1. Grass background with gradient texture
-       * 2. Track surface (asphalt with texture patterns)
-       * 3. Track centerline (racing line guide)
-       * 4. Kerbs at track edges (red/white striped barriers)
-       * 5. Checkpoint markers (visual lap validation points)
-       * 6. Start/finish line with grid pattern
-       *
-       * Performance Features:
-       * - Viewport culling (only renders visible track sections)
-       * - Gradient backgrounds for depth perception
-       * - Texture patterns for surface variety
+       * The circuit is painted once per weather setting onto an offscreen layer (tarmac, kerbs,
+       * start/finish and checkpoint gates) and blitted each frame. Only the grass is filled live,
+       * because the camera can see beyond the layer's edges.
        */
-      function drawTrack() {
-        // Clear with gradient grass background - draw in world coordinates
-        // Calculate world bounds that are visible on screen
-        const worldLeft = camera.x;
-        const worldTop = camera.y;
-        const worldRight = camera.x + canvas.width;
-        const worldBottom = camera.y + canvas.height;
+      let trackLayer = null;
 
-        // Add padding to ensure no gaps
-        const padding = 200;
-        
-        // Weather-based grass colors
-        let grassColors;
-        if (gameWeather === 'clear') {
-          grassColors = {
-            start: "#3a7c3a",
-            middle: "#2d5a2d", 
-            end: "#1f4a1f"
-          };
-        } else if (gameWeather === 'rain') {
-          grassColors = {
-            start: "#2a5c2a",
-            middle: "#1d3a1d",
-            end: "#0f2a0f"
-          };
-        } else if (gameWeather === 'storm') {
-          grassColors = {
-            start: "#1a3c1a",
-            middle: "#0d2a0d",
-            end: "#051a05"
-          };
+      function makeTile(size, paint) {
+        const tile = document.createElement("canvas");
+        tile.width = size;
+        tile.height = size;
+        paint(tile.getContext("2d"), size);
+        return tile;
+      }
+
+      function makeAsphaltPattern(g, wet) {
+        const tile = makeTile(96, (t, size) => {
+          t.fillStyle = wet ? "#3d4046" : "#4b4e53";
+          t.fillRect(0, 0, size, size);
+          for (let i = 0; i < 1400; i++) {
+            const shade = Math.random();
+            t.fillStyle = shade > 0.5 ? `rgba(255,255,255,${0.03 + Math.random() * 0.05})` : `rgba(0,0,0,${0.05 + Math.random() * 0.1})`;
+            t.fillRect(Math.random() * size, Math.random() * size, 1 + Math.random(), 1 + Math.random());
+          }
+        });
+        return g.createPattern(tile, "repeat");
+      }
+
+      const grassPatterns = {};
+      function getGrassPattern() {
+        if (!grassPatterns[gameWeather]) {
+          const tile = makeTile(240, (t, size) => {
+            t.fillStyle = "rgba(255,255,255,0.04)";
+            t.fillRect(0, 0, size, size / 2);
+            for (let i = 0; i < 260; i++) {
+              t.fillStyle = Math.random() > 0.5 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.08)";
+              t.fillRect(Math.random() * size, Math.random() * size, 2, 2);
+            }
+          });
+          grassPatterns[gameWeather] = ctx.createPattern(tile, "repeat");
         }
-        
-        const grassGradient = ctx.createLinearGradient(
-          worldLeft - padding,
-          worldTop - padding,
-          worldRight + padding,
-          worldBottom + padding
-        );
-        grassGradient.addColorStop(0, grassColors.start);
-        grassGradient.addColorStop(0.5, grassColors.middle);
-        grassGradient.addColorStop(1, grassColors.end);
+        return grassPatterns[gameWeather];
+      }
 
-        ctx.fillStyle = grassGradient;
-        ctx.fillRect(
-          worldLeft - padding,
-          worldTop - padding,
-          canvas.width + padding * 2,
-          canvas.height + padding * 2
-        );
+      function traceTrackPath(g) {
+        g.beginPath();
+        track.path.forEach((point, index) => {
+          if (index === 0) g.moveTo(point.x, point.y);
+          else g.lineTo(point.x, point.y);
+        });
+        g.closePath();
+      }
 
-        // Draw track shadow/depth
-        ctx.strokeStyle = "#202020";
-        ctx.lineWidth = track.width + 8;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.beginPath();
+      function strokeTrackPath(g, style, width, dash) {
+        traceTrackPath(g);
+        g.strokeStyle = style;
+        g.lineWidth = width;
+        g.setLineDash(dash || []);
+        g.stroke();
+        g.setLineDash([]);
+      }
 
-        track.waypoints.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x + 2, point.y + 2);
-          } else {
-            ctx.lineTo(point.x + 2, point.y + 2);
+      function trackDirectionAt(x, y) {
+        let best = 0;
+        let bestDistance = Infinity;
+        track.path.forEach((point, index) => {
+          const distance = Math.hypot(point.x - x, point.y - y);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            best = index;
           }
         });
-        ctx.closePath();
-        ctx.stroke();
+        const previous = track.path[(best - 1 + track.path.length) % track.path.length];
+        const next = track.path[(best + 1) % track.path.length];
+        return Math.atan2(next.y - previous.y, next.x - previous.x);
+      }
 
-        // Draw track outline (kerbs) with red/white stripes
-        ctx.lineWidth = track.width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        // Create kerb pattern
-        const kerbGradient = ctx.createLinearGradient(0, 0, 50, 50);
-        kerbGradient.addColorStop(0, "#ff0000");
-        kerbGradient.addColorStop(0.5, "#ffffff");
-        kerbGradient.addColorStop(1, "#ff0000");
-
-        ctx.strokeStyle = kerbGradient;
-        ctx.beginPath();
-
-        track.waypoints.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
+      function paintStartFinish(g) {
+        const start = track.waypoints[0];
+        const next = track.waypoints[1];
+        const direction = Math.atan2(next.y - start.y, next.x - start.x);
+        const across = track.width - 30;
+        const square = across / 8;
+        g.save();
+        g.translate(start.x, start.y);
+        g.rotate(direction);
+        for (let row = 0; row < 3; row++) {
+          for (let column = 0; column < 8; column++) {
+            g.fillStyle = (row + column) % 2 === 0 ? "#f4f4f4" : "#111111";
+            g.fillRect(-square * 1.5 + row * square, -across / 2 + column * square, square, square);
           }
-        });
-        ctx.closePath();
-        ctx.stroke();
-
-        // Draw track surface (asphalt) with texture
-        ctx.lineWidth = track.width - 20;
-        ctx.beginPath();
-
-        track.waypoints.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
-          }
-        });
-        ctx.closePath();
-
-        // Base asphalt
-        const asphaltGradient = ctx.createLinearGradient(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-        asphaltGradient.addColorStop(0, "#4a4a4a");
-        asphaltGradient.addColorStop(0.3, "#555555");
-        asphaltGradient.addColorStop(0.7, "#3a3a3a");
-        asphaltGradient.addColorStop(1, "#454545");
-
-        ctx.strokeStyle = asphaltGradient;
-        ctx.stroke();
-
-        // Add asphalt texture overlay
-        ctx.save();
-        ctx.clip();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-        for (let i = 0; i < 500; i++) {
-          const x = Math.random() * canvas.width;
-          const y = Math.random() * canvas.height;
-          ctx.fillRect(x, y, 1, 1);
         }
-        ctx.restore();
+        g.restore();
 
-        // Draw center line with better styling
-        ctx.strokeStyle = "#ffff00";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([30, 20]);
-        ctx.beginPath();
-
-        track.waypoints.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
+        // Grid slots match the AI starting positions behind the line
+        g.strokeStyle = "rgba(255,255,255,0.7)";
+        g.lineWidth = 1.5;
+        for (let row = 1; row <= 8; row++) {
+          for (const side of [-1, 1]) {
+            g.strokeRect(1000 + side * 30 - 7, 1350 + row * 35 + side * 3 - 13, 14, 26);
           }
+        }
+      }
+
+      function paintCheckpointGate(g, checkpoint) {
+        const direction = trackDirectionAt(checkpoint.x, checkpoint.y);
+        const half = (track.width - 10) / 2;
+        const perpX = -Math.sin(direction);
+        const perpY = Math.cos(direction);
+        const posts = [
+          { x: checkpoint.x + perpX * half, y: checkpoint.y + perpY * half },
+          { x: checkpoint.x - perpX * half, y: checkpoint.y - perpY * half },
+        ];
+
+        g.save();
+        g.strokeStyle = "rgba(255, 80, 80, 0.6)";
+        g.lineWidth = 3;
+        g.setLineDash([14, 12]);
+        g.beginPath();
+        g.moveTo(posts[0].x, posts[0].y);
+        g.lineTo(posts[1].x, posts[1].y);
+        g.stroke();
+        g.setLineDash([]);
+
+        posts.forEach((post) => {
+          g.fillStyle = "rgba(0,0,0,0.35)";
+          g.beginPath();
+          g.arc(post.x + 2, post.y + 3, 9, 0, Math.PI * 2);
+          g.fill();
+          const glow = g.createRadialGradient(post.x - 3, post.y - 3, 1, post.x, post.y, 9);
+          glow.addColorStop(0, "#ff7b7b");
+          glow.addColorStop(1, "#b30000");
+          g.fillStyle = glow;
+          g.beginPath();
+          g.arc(post.x, post.y, 8, 0, Math.PI * 2);
+          g.fill();
         });
-        ctx.closePath();
-        ctx.stroke();
-        ctx.setLineDash([]);
 
-        // Draw enhanced start/finish line
-        const startPoint = track.waypoints[0];
+        g.fillStyle = "rgba(0, 0, 0, 0.75)";
+        g.beginPath();
+        g.arc(checkpoint.x, checkpoint.y - 26, 16, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#ffffff";
+        g.lineWidth = 2;
+        g.stroke();
+        g.fillStyle = "#ffffff";
+        g.font = "bold 18px Arial";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText(`${checkpoint.id}`, checkpoint.x, checkpoint.y - 26);
+        g.font = "bold 12px Arial";
+        g.lineWidth = 3;
+        g.strokeStyle = "#000000";
+        g.strokeText(checkpoint.name, checkpoint.x, checkpoint.y + 26);
+        g.fillStyle = "#ffe066";
+        g.fillText(checkpoint.name, checkpoint.x, checkpoint.y + 26);
+        g.restore();
+      }
 
-        // Just draw a wide white line for start/finish
-        ctx.fillStyle = "#ffffff";
-        ctx.save();
-        ctx.translate(startPoint.x, startPoint.y);
+      function paintTrackLayer(g) {
+        const wet = gameWeather !== "clear";
+        g.lineCap = "round";
+        g.lineJoin = "round";
 
-        // Calculate perpendicular direction for the line
-        const nextPoint = track.waypoints[1];
-        const dx = nextPoint.x - startPoint.x;
-        const dy = nextPoint.y - startPoint.y;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const perpX = -dy / length;
-        const perpY = dx / length;
+        // Ground shadow and a worn verge outside the kerbs
+        g.save();
+        g.translate(4, 7);
+        strokeTrackPath(g, "rgba(0, 0, 0, 0.32)", track.width + 14);
+        g.restore();
+        strokeTrackPath(g, wet ? "rgba(70, 60, 40, 0.55)" : "rgba(120, 105, 60, 0.45)", track.width + 12);
 
-        // Draw start/finish line across track width
-        const lineWidth = track.width - 10;
-        ctx.fillRect(
-          (-lineWidth / 2) * perpX - 2,
-          (-lineWidth / 2) * perpY - 2,
-          4,
-          lineWidth + 4
-        );
-        ctx.rotate(Math.atan2(perpY, perpX));
-        ctx.fillRect(-lineWidth / 2, -2, lineWidth, 4);
-        ctx.restore();
+        // Kerbs: white base with red blocks
+        strokeTrackPath(g, "#efefef", track.width);
+        strokeTrackPath(g, "#d42a2a", track.width, [26, 26]);
 
-        // Draw checkpoint gates with better styling using checkpoint array
+        // White edge line, then the tarmac on top
+        strokeTrackPath(g, "#f7f7f7", track.width - 26);
+        strokeTrackPath(g, makeAsphaltPattern(g, wet), track.width - 30);
+        if (wet) strokeTrackPath(g, "rgba(150, 170, 200, 0.16)", track.width - 30);
+
+        // Rubbered-in racing groove and a faint guide line
+        strokeTrackPath(g, "rgba(0, 0, 0, 0.14)", 40);
+        strokeTrackPath(g, "rgba(255, 225, 110, 0.45)", 2, [26, 30]);
+
+        paintStartFinish(g);
         track.checkpoints.forEach((checkpoint, index) => {
-          const point = checkpoint;
-
-          // Special handling for finish line (checkpoint 0) - make it wider
-          if (index === 0) {
-            // Wide finish line spanning optimal racing area
-            const finishWidth = 240;
-            const finishHeight = 80;
-            const centerX = point.x;
-            const centerY = point.y;
-
-            // Draw wider finish line area with checkerboard pattern
-            ctx.save();
-
-            // Background rectangle
-            ctx.fillStyle = "#000000";
-            ctx.fillRect(
-              centerX - finishWidth / 2,
-              centerY - finishHeight / 2,
-              finishWidth,
-              finishHeight
-            );
-
-            // Checkerboard pattern for finish line
-            const squareSize = 20;
-            for (let x = 0; x < finishWidth; x += squareSize) {
-              for (let y = 0; y < finishHeight; y += squareSize) {
-                const isWhite = (x / squareSize + y / squareSize) % 2 === 0;
-                ctx.fillStyle = isWhite ? "#ffffff" : "#000000";
-                ctx.fillRect(
-                  centerX - finishWidth / 2 + x,
-                  centerY - finishHeight / 2 + y,
-                  squareSize,
-                  squareSize
-                );
-              }
-            }
-
-            // Border for finish line
-            ctx.strokeStyle = "#ff0000";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(
-              centerX - finishWidth / 2,
-              centerY - finishHeight / 2,
-              finishWidth,
-              finishHeight
-            );
-
-            // Finish line text
-            ctx.fillStyle = "#ff0000";
-            ctx.font = "bold 16px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(
-              "START/FINISH",
-              centerX,
-              centerY - finishHeight / 2 - 10
-            );
-
-            ctx.restore();
-          } else {
-            // Regular checkpoint gate for other checkpoints
-            // Find nearby waypoints to calculate gate direction
-            let closestWaypointIndex = 0;
-            let minDistance = Infinity;
-
-            track.waypoints.forEach((waypoint, wpIndex) => {
-              const distance = Math.sqrt(
-                (waypoint.x - point.x) * (waypoint.x - point.x) +
-                  (waypoint.y - point.y) * (waypoint.y - point.y)
-              );
-              if (distance < minDistance) {
-                minDistance = distance;
-                closestWaypointIndex = wpIndex;
-              }
-            });
-
-            // Calculate gate direction perpendicular to track
-            const prevPoint =
-              track.waypoints[
-                closestWaypointIndex > 0
-                  ? closestWaypointIndex - 1
-                  : track.waypoints.length - 1
-              ];
-            const nextPoint =
-              track.waypoints[
-                (closestWaypointIndex + 1) % track.waypoints.length
-              ];
-
-            const dx = nextPoint.x - prevPoint.x;
-            const dy = nextPoint.y - prevPoint.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-
-            if (length > 0) {
-              // Perpendicular vector for gate orientation
-              const perpX = -dy / length;
-              const perpY = dx / length;
-
-              // Gate spans the full width of the track
-              const gateWidth = track.width - 10; // Slightly smaller than track width
-              const post1X = point.x + (perpX * gateWidth) / 2;
-              const post1Y = point.y + (perpY * gateWidth) / 2;
-              const post2X = point.x - (perpX * gateWidth) / 2;
-              const post2Y = point.y - (perpY * gateWidth) / 2;
-
-              // Post shadows
-              ctx.fillStyle = "#800000";
-              ctx.beginPath();
-              ctx.arc(post1X + 2, post1Y + 2, 12, 0, 2 * Math.PI);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.arc(post2X + 2, post2Y + 2, 12, 0, 2 * Math.PI);
-              ctx.fill();
-
-              // Gate posts with gradient
-              const postGradient = ctx.createRadialGradient(
-                post1X,
-                post1Y,
-                0,
-                post1X,
-                post1Y,
-                12
-              );
-              postGradient.addColorStop(0, "#ff6666");
-              postGradient.addColorStop(1, "#cc0000");
-
-              ctx.fillStyle = postGradient;
-              ctx.beginPath();
-              ctx.arc(post1X, post1Y, 10, 0, 2 * Math.PI);
-              ctx.fill();
-
-              ctx.beginPath();
-              ctx.arc(post2X, post2Y, 10, 0, 2 * Math.PI);
-              ctx.fill();
-
-              // Gate line with glow effect - spans full track width
-              ctx.shadowColor = "#ff4444";
-              ctx.shadowBlur = 10;
-              ctx.strokeStyle = "#ff4444";
-              ctx.lineWidth = 4;
-              ctx.setLineDash([15, 10]);
-              ctx.beginPath();
-              ctx.moveTo(post1X, post1Y);
-              ctx.lineTo(post2X, post2Y);
-              ctx.stroke();
-              ctx.setLineDash([]);
-              ctx.shadowBlur = 0;
-
-              // Enhanced checkpoint number display
-              ctx.save();
-
-              // Background circle for number
-              ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-              ctx.beginPath();
-              ctx.arc(point.x, point.y - 25, 18, 0, 2 * Math.PI);
-              ctx.fill();
-
-              // White border for circle
-              ctx.strokeStyle = "#ffffff";
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.arc(point.x, point.y - 25, 18, 0, 2 * Math.PI);
-              ctx.stroke();
-
-              // Gate number with better styling
-              ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 20px Arial";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(`${checkpoint.id}`, point.x, point.y - 25);
-
-              // Checkpoint name below
-              ctx.fillStyle = "#ffff00";
-              ctx.font = "bold 12px Arial";
-              ctx.strokeStyle = "#000000";
-              ctx.lineWidth = 3;
-              ctx.strokeText(checkpoint.name, point.x, point.y + 25);
-              ctx.fillText(checkpoint.name, point.x, point.y + 25);
-
-              ctx.restore();
-            }
-          }
+          if (index > 0) paintCheckpointGate(g, checkpoint);
         });
+      }
+
+      function getTrackLayer() {
+        if (trackLayer && trackLayer.weather === gameWeather) return trackLayer;
+        const margin = track.width + 140;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        track.path.forEach((point) => {
+          minX = Math.min(minX, point.x);
+          minY = Math.min(minY, point.y);
+          maxX = Math.max(maxX, point.x);
+          maxY = Math.max(maxY, point.y);
+        });
+        const originX = Math.floor(minX - margin);
+        const originY = Math.floor(minY - margin);
+        const layerCanvas = document.createElement("canvas");
+        layerCanvas.width = Math.ceil(maxX + margin) - originX;
+        layerCanvas.height = Math.ceil(maxY + margin) - originY;
+        const g = layerCanvas.getContext("2d");
+        g.translate(-originX, -originY);
+        paintTrackLayer(g);
+        trackLayer = { canvas: layerCanvas, originX, originY, weather: gameWeather };
+        return trackLayer;
+      }
+
+      function drawTrack() {
+        const view = cameraRenderPosition();
+        const padding = 200;
+        const left = view.x - padding;
+        const top = view.y - padding;
+        const width = canvas.width + padding * 2;
+        const height = canvas.height + padding * 2;
+
+        const grassColours = {
+          clear: ["#3a7c3a", "#2d5a2d", "#1f4a1f"],
+          rain: ["#2a5c2a", "#1d3a1d", "#0f2a0f"],
+          storm: ["#1a3c1a", "#0d2a0d", "#051a05"],
+        }[gameWeather];
+        const grassGradient = ctx.createLinearGradient(left, top, left + width, top + height);
+        grassGradient.addColorStop(0, grassColours[0]);
+        grassGradient.addColorStop(0.5, grassColours[1]);
+        grassGradient.addColorStop(1, grassColours[2]);
+        ctx.fillStyle = grassGradient;
+        ctx.fillRect(left, top, width, height);
+        ctx.fillStyle = getGrassPattern();
+        ctx.fillRect(left, top, width, height);
+
+        const layer = getTrackLayer();
+        const sourceX = Math.max(0, left - layer.originX);
+        const sourceY = Math.max(0, top - layer.originY);
+        const sourceWidth = Math.min(layer.canvas.width - sourceX, left + width - layer.originX - sourceX);
+        const sourceHeight = Math.min(layer.canvas.height - sourceY, top + height - layer.originY - sourceY);
+        if (sourceWidth > 0 && sourceHeight > 0) {
+          ctx.drawImage(
+            layer.canvas,
+            sourceX,
+            sourceY,
+            sourceWidth,
+            sourceHeight,
+            layer.originX + sourceX,
+            layer.originY + sourceY,
+            sourceWidth,
+            sourceHeight
+          );
+        }
       }
 
       /**
-       * Formula 1 Style Car Rendering System
-       * Draws detailed race cars with multiple visual components and effects.
-       * Uses modular approach to separate chassis, cockpit, wings, and details.
+       * Car Rendering System
+       *
+       * Each livery is painted once at high resolution into a sprite (body, wings, cockpit,
+       * number and team code) and drawn rotated each frame. The wheels are drawn live so the
+       * fronts can turn with the steering, followed by rain light, speed and damage effects.
+       * Car-local units: +x is forwards, one unit is one world pixel for a 20 px car.
        */
+      const SPRITE_SCALE = 4;
+      const SPRITE_BOUNDS = { left: -20, top: -13, width: 42, height: 26 };
+      const carSprites = new Map();
+
+      function roundedRectPath(g, x, y, width, height, radius) {
+        g.beginPath();
+        if (typeof g.roundRect === "function") {
+          g.roundRect(x, y, width, height, radius);
+        } else {
+          g.rect(x, y, width, height);
+        }
+      }
+
+      function carBodyNumber(car) {
+        return car === player || car.isPlayer ? "1" : String(aiCars.indexOf(car) + 2);
+      }
+
+      function traceCarSilhouette(g) {
+        g.beginPath();
+        g.moveTo(-14.6, -7);
+        g.lineTo(-11.4, -7);
+        g.lineTo(-11.4, -5.4);
+        g.lineTo(3, -5.4);
+        g.lineTo(6, -3);
+        g.lineTo(13, -2);
+        g.lineTo(13, -9.2);
+        g.lineTo(16, -9.2);
+        g.lineTo(17.2, 0);
+        g.lineTo(16, 9.2);
+        g.lineTo(13, 9.2);
+        g.lineTo(13, 2);
+        g.lineTo(6, 3);
+        g.lineTo(3, 5.4);
+        g.lineTo(-11.4, 5.4);
+        g.lineTo(-11.4, 7);
+        g.lineTo(-14.6, 7);
+        g.closePath();
+      }
+
+      function paintCarSprite(g, car) {
+        const colour = car.color;
+        const light = lightenColor(colour, 28);
+        const dark = shadeColor(colour, -38);
+        const darker = shadeColor(colour, -60);
+        const accent = readableTextOn(colour);
+
+        // Soft ground shadow
+        g.save();
+        g.translate(1.4, 1.8);
+        g.fillStyle = "rgba(0, 0, 0, 0.28)";
+        traceCarSilhouette(g);
+        g.fill();
+        g.restore();
+
+        // Floor and plank
+        roundedRectPath(g, -12.6, -5.6, 20.4, 11.2, 1.6);
+        g.fillStyle = "#17191c";
+        g.fill();
+
+        // Sidepods
+        const podGradient = g.createLinearGradient(0, -5.4, 0, 5.4);
+        podGradient.addColorStop(0, dark);
+        podGradient.addColorStop(0.5, colour);
+        podGradient.addColorStop(1, dark);
+        g.fillStyle = podGradient;
+        g.beginPath();
+        g.moveTo(-10.4, -5.2);
+        g.lineTo(2.6, -5.2);
+        g.quadraticCurveTo(5.6, -4.4, 6.4, -2.4);
+        g.lineTo(6.4, 2.4);
+        g.quadraticCurveTo(5.6, 4.4, 2.6, 5.2);
+        g.lineTo(-10.4, 5.2);
+        g.quadraticCurveTo(-12, 3, -12, 0);
+        g.quadraticCurveTo(-12, -3, -10.4, -5.2);
+        g.closePath();
+        g.fill();
+        g.fillStyle = "rgba(0, 0, 0, 0.55)";
+        g.fillRect(1.2, -5.1, 3.6, 1.5);
+        g.fillRect(1.2, 3.6, 3.6, 1.5);
+
+        // Engine cover and nose
+        const spineGradient = g.createLinearGradient(0, -2.8, 0, 2.8);
+        spineGradient.addColorStop(0, light);
+        spineGradient.addColorStop(0.45, colour);
+        spineGradient.addColorStop(1, darker);
+        g.fillStyle = spineGradient;
+        g.beginPath();
+        g.moveTo(-11.8, -2.4);
+        g.lineTo(5, -2.8);
+        g.quadraticCurveTo(11, -2.2, 16.2, -1);
+        g.quadraticCurveTo(17.4, 0, 16.2, 1);
+        g.quadraticCurveTo(11, 2.2, 5, 2.8);
+        g.lineTo(-11.8, 2.4);
+        g.closePath();
+        g.fill();
+        g.fillStyle = accent === "#ffffff" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
+        g.fillRect(-11.5, -0.45, 24, 0.9);
+
+        // Front wing with endplates and flap line
+        g.fillStyle = dark;
+        g.fillRect(13.2, -8.8, 2.8, 17.6);
+        g.fillStyle = "#1c1c1c";
+        g.fillRect(12.9, -9.4, 3.4, 1);
+        g.fillRect(12.9, 8.4, 3.4, 1);
+        g.strokeStyle = "rgba(255,255,255,0.3)";
+        g.lineWidth = 0.35;
+        g.beginPath();
+        g.moveTo(14.6, -8.4);
+        g.lineTo(14.6, 8.4);
+        g.stroke();
+
+        // Rear wing with endplates and DRS slot
+        g.fillStyle = dark;
+        g.fillRect(-14.4, -6.6, 2.6, 13.2);
+        g.fillStyle = "#1c1c1c";
+        g.fillRect(-14.8, -7.2, 3.4, 1);
+        g.fillRect(-14.8, 6.2, 3.4, 1);
+        g.strokeStyle = "rgba(0,0,0,0.5)";
+        g.beginPath();
+        g.moveTo(-13.1, -6.2);
+        g.lineTo(-13.1, 6.2);
+        g.stroke();
+
+        // Airbox, cockpit, halo and helmet
+        roundedRectPath(g, -7.2, -1.5, 2.8, 3, 0.8);
+        g.fillStyle = "#0e0e10";
+        g.fill();
+        g.fillStyle = "#0b0b0d";
+        g.beginPath();
+        g.ellipse(-2.6, 0, 3.6, 1.9, 0, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#2c2e33";
+        g.lineWidth = 0.55;
+        g.beginPath();
+        g.ellipse(-2.6, 0, 3.9, 2.25, 0, 0, Math.PI * 2);
+        g.stroke();
+        g.fillStyle = accent === "#ffffff" ? "#f2f2f2" : "#15213a";
+        g.beginPath();
+        g.arc(-2.2, 0, 1.55, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = accent === "#ffffff" ? colour : "#9fd4ff";
+        g.beginPath();
+        g.arc(-1.7, 0, 0.9, -Math.PI / 2, Math.PI / 2);
+        g.fill();
+
+        // Number on the nose, team code on the engine cover
+        g.fillStyle = accent;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.font = "bold 3.2px Arial";
+        g.fillText(carBodyNumber(car), 9.6, 0.1);
+        g.font = "bold 2.3px Arial";
+        g.fillText(getTeamCode(car), -8.6, 0.1);
+      }
+
+      function getCarSprite(car) {
+        const key = `${car.color}|${getTeamCode(car)}|${carBodyNumber(car)}`;
+        let sprite = carSprites.get(key);
+        if (!sprite) {
+          sprite = document.createElement("canvas");
+          sprite.width = SPRITE_BOUNDS.width * SPRITE_SCALE;
+          sprite.height = SPRITE_BOUNDS.height * SPRITE_SCALE;
+          const g = sprite.getContext("2d");
+          g.scale(SPRITE_SCALE, SPRITE_SCALE);
+          g.translate(-SPRITE_BOUNDS.left, -SPRITE_BOUNDS.top);
+          paintCarSprite(g, car);
+          carSprites.set(key, sprite);
+        }
+        return sprite;
+      }
+
+      function tyreBandColour() {
+        return gameWeather === "clear" ? "#e3b505" : gameWeather === "rain" ? "#2ecc71" : "#2e86de";
+      }
+
+      function drawWheel(x, y, width, height, steer) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(steer);
+        roundedRectPath(ctx, -width / 2 + 0.6, -height / 2 + 0.8, width, height, 0.9);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.fill();
+        roundedRectPath(ctx, -width / 2, -height / 2, width, height, 0.9);
+        ctx.fillStyle = "#121212";
+        ctx.fill();
+        ctx.strokeStyle = "#2f2f2f";
+        ctx.lineWidth = 0.35;
+        ctx.stroke();
+        ctx.fillStyle = tyreBandColour();
+        ctx.fillRect(-width / 2 + 0.7, y > 0 ? height / 2 - 0.75 : -height / 2 + 0.25, width - 1.4, 0.5);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+        ctx.fillRect(-width / 2 + 0.6, -0.35, width - 1.2, 0.7);
+        ctx.restore();
+      }
+
+      function drawCarWheels(car) {
+        const steer = car.steerAngle || 0;
+        drawWheel(9.6, -7.4, 4.6, 2.9, steer);
+        drawWheel(9.6, 7.4, 4.6, 2.9, steer);
+        drawWheel(-8.4, -7.7, 5.3, 3.5, 0);
+        drawWheel(-8.4, 7.7, 5.3, 3.5, 0);
+      }
+
+      function drawRainLight() {
+        if (gameWeather === "clear" || Math.floor(performance.now() / 110) % 2 === 0) return;
+        ctx.save();
+        ctx.shadowColor = "#ff3b3b";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "#ff4d4d";
+        ctx.fillRect(-13.4, -1, 1.2, 2);
+        ctx.restore();
+      }
+
       function drawCar(car) {
+        const pose = renderPose(car);
+        const scale = car.size / 20;
+        const dimensions = { width: 30, height: 16, scale: 1 };
+
         ctx.save();
+        ctx.translate(pose.x, pose.y);
+        ctx.rotate(pose.angle);
+        ctx.scale(scale, scale);
 
-        // Position and orient the car in world space
-        ctx.translate(car.x, car.y);
-        ctx.rotate(car.angle);
-
-        // Calculate scaling and dimensions for this car
-        const dimensions = {
-          width: car.size,
-          height: car.size * 0.5,
-          scale: car.size / 20,
-        };
-
-        // Setup rendering context (shadows, transparency effects)
-        setupCarRendering(car, dimensions);
-
-        // Render car components in back-to-front order
-        drawCarChassis(car, dimensions); // Main body structure
-        drawCarCockpit(dimensions); // Driver area
-        drawCarNose(car, dimensions); // Front aerodynamics
-        drawCarWings(car, dimensions); // Front and rear wings
-        drawCarWheels(dimensions); // All four wheels
-        drawCarDetails(car, dimensions); // Numbers, team codes, indicators
-        drawCarEffects(car, dimensions); // Speed trails, damage, nitro effects
-
-        ctx.restore();
-      }
-
-      function setupCarRendering(car, dimensions) {
         const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
-        const isGhosted =
-          car.lapsCompleted === 0 &&
-          car.currentCheckpoint <= 2 &&
-          raceTime <= 15;
+        const isGhosted = car.lapsCompleted === 0 && car.currentCheckpoint <= 2 && raceTime <= 15;
+        if (isGhosted) ctx.globalAlpha = 0.7;
 
-        if (isGhosted) {
-          ctx.globalAlpha = 0.7;
-        }
-
-        // Car shadow
-        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-        ctx.shadowBlur = 4 * dimensions.scale;
-        ctx.shadowOffsetX = 2 * dimensions.scale;
-        ctx.shadowOffsetY = 2 * dimensions.scale;
-      }
-
-      function drawCarChassis(car, dimensions) {
-        const { width, height, scale } = dimensions;
-
-        const chassisGradient = ctx.createLinearGradient(
-          -width / 2,
-          -height / 2,
-          width / 2,
-          height / 2
-        );
-        chassisGradient.addColorStop(0, lightenColor(car.color, 20));
-        chassisGradient.addColorStop(0.3, car.color);
-        chassisGradient.addColorStop(0.7, shadeColor(car.color, -20));
-        chassisGradient.addColorStop(1, shadeColor(car.color, -40));
-
-        ctx.fillStyle = chassisGradient;
-        ctx.beginPath();
-        ctx.moveTo(width / 2 - 2 * scale, 0);
-        ctx.quadraticCurveTo(width / 3, -height / 3, width / 6, -height / 2);
-        ctx.lineTo(-width / 3, -height / 2);
-        ctx.quadraticCurveTo(-width / 2, -height / 3, -width / 2, 0);
-        ctx.quadraticCurveTo(-width / 2, height / 3, -width / 3, height / 2);
-        ctx.lineTo(width / 6, height / 2);
-        ctx.quadraticCurveTo(width / 3, height / 3, width / 2 - 2 * scale, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        // Reset shadow for other elements
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-      }
-
-      function drawCarCockpit(dimensions) {
-        const { width, height, scale } = dimensions;
-
-        const cockpitGradient = ctx.createRadialGradient(
-          0,
-          0,
-          0,
-          0,
-          0,
-          width / 4
-        );
-        cockpitGradient.addColorStop(0, "rgba(20, 20, 20, 0.9)");
-        cockpitGradient.addColorStop(1, "rgba(0, 0, 0, 1)");
-
-        ctx.fillStyle = cockpitGradient;
-        ctx.beginPath();
-        ctx.ellipse(-width / 8, 0, width / 4, height / 3, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Driver helmet
-        ctx.fillStyle = "#1E90FF";
-        ctx.beginPath();
-        ctx.arc(-width / 8, 0, 3 * scale, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Helmet visor reflection
-        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.beginPath();
-        ctx.arc(-width / 8 - scale, -scale, 1.5 * scale, 0, Math.PI);
-        ctx.fill();
-      }
-
-      function drawCarNose(car, dimensions) {
-        const { width, scale } = dimensions;
-
-        const noseGradient = ctx.createLinearGradient(
-          width / 4,
-          0,
-          width / 2,
-          0
-        );
-        noseGradient.addColorStop(0, car.color);
-        noseGradient.addColorStop(1, lightenColor(car.color, 10));
-
-        ctx.fillStyle = noseGradient;
-        ctx.beginPath();
-        ctx.moveTo(width / 2 - 2 * scale, 0);
-        ctx.lineTo(width / 2 + 4 * scale, -2 * scale);
-        ctx.lineTo(width / 2 + 6 * scale, 0);
-        ctx.lineTo(width / 2 + 4 * scale, 2 * scale);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      function drawCarWings(car, dimensions) {
-        const { width, height, scale } = dimensions;
-
-        // Front wing elements
-        ctx.fillStyle = shadeColor(car.color, -30);
-        ctx.strokeStyle = "#333333";
-        ctx.lineWidth = 0.5;
-
-        ctx.fillRect(width / 3, -height / 2 - 3 * scale, width / 4, 2 * scale);
-        ctx.strokeRect(
-          width / 3,
-          -height / 2 - 3 * scale,
-          width / 4,
-          2 * scale
-        );
-        ctx.fillRect(width / 3, height / 2 + scale, width / 4, 2 * scale);
-        ctx.strokeRect(width / 3, height / 2 + scale, width / 4, 2 * scale);
-
-        // Side radiator intakes
-        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-        ctx.fillRect(-width / 8, -height / 2 + 2 * scale, width / 8, 3 * scale);
-        ctx.fillRect(-width / 8, height / 2 - 5 * scale, width / 8, 3 * scale);
-
-        // Rear wing
-        ctx.fillStyle = shadeColor(car.color, -25);
-        ctx.fillRect(
-          -width / 2 - 4 * scale,
-          -height / 2.5,
-          3 * scale,
-          height / 1.25
-        );
-
-        // Wing endplates
-        ctx.fillStyle = "#333333";
-        ctx.fillRect(
-          -width / 2 - 4 * scale,
-          -height / 2.5,
-          scale,
-          height / 1.25
-        );
-        ctx.fillRect(
-          -width / 2 - 2 * scale,
-          -height / 2.5,
-          scale,
-          height / 1.25
-        );
-      }
-
-      function drawCarWheels(dimensions) {
-        const { width, height, scale } = dimensions;
-
-        drawWheel(
-          width / 3,
-          -height / 2 - 2 * scale,
-          4 * scale,
-          2 * scale,
-          true
-        );
-        drawWheel(
-          width / 3,
-          height / 2 + 2 * scale,
-          4 * scale,
-          2 * scale,
-          true
-        );
-        drawWheel(
-          -width / 3,
-          -height / 2 - 2 * scale,
-          5 * scale,
-          3 * scale,
-          false
-        );
-        drawWheel(
-          -width / 3,
-          height / 2 + 2 * scale,
-          5 * scale,
-          3 * scale,
-          false
-        );
-      }
-
-      function drawCarDetails(car, dimensions) {
-        const { width, height, scale } = dimensions;
-
-        drawCarNumber(car, width, scale);
-        drawTeamCode(car, width, height, scale);
-        drawBehaviorIndicator(car);
-      }
-
-      function drawCarNumber(car, width, scale) {
-        if (car === player) {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.strokeStyle = "#000000";
-          ctx.lineWidth = 1;
-          ctx.font = `bold ${8 * scale}px Arial`;
-          ctx.textAlign = "center";
-          ctx.strokeText("1", width / 4, 2 * scale);
-          ctx.fillText("1", width / 4, 2 * scale);
-        } else if (car.name) {
-          const carNumber = aiCars.indexOf(car) + 2;
-          ctx.fillStyle = "#FFFFFF";
-          ctx.strokeStyle = "#000000";
-          ctx.lineWidth = 0.5;
-          ctx.font = `bold ${6 * scale}px Arial`;
-          ctx.textAlign = "center";
-          ctx.strokeText(carNumber.toString(), width / 4, 2 * scale);
-          ctx.fillText(carNumber.toString(), width / 4, 2 * scale);
-        }
-      }
-
-      function drawTeamCode(car, width, height, scale) {
-        if (car.teamAttributes || car.name) {
-          const teamCode = getTeamCode(car);
-          ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-          ctx.font = `bold ${4 * scale}px Arial`;
-          ctx.textAlign = "center";
-          ctx.fillText(teamCode, -width / 6, -height / 4);
-        }
-      }
-
-      function drawBehaviorIndicator(car) {
-        if (!car.behavior) return;
-
+        drawCarWheels(car);
+        ctx.drawImage(getCarSprite(car), SPRITE_BOUNDS.left, SPRITE_BOUNDS.top, SPRITE_BOUNDS.width, SPRITE_BOUNDS.height);
+        drawRainLight();
+        drawCarEffects(car, dimensions);
         ctx.restore();
-        ctx.save();
-        ctx.translate(car.x, car.y);
+
+        drawBehaviorIndicator(car, pose);
+      }
+
+      function drawBehaviorIndicator(car, pose) {
+        if (!car.behavior) return;
 
         const colors = {
           overtaking: "rgba(255, 255, 0, 0.6)",
@@ -8200,14 +8142,9 @@
         if (color) {
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(0, -15, 3, 0, 2 * Math.PI);
+          ctx.arc(pose.x, pose.y - 15, 3, 0, 2 * Math.PI);
           ctx.fill();
         }
-
-        ctx.restore();
-        ctx.save();
-        ctx.translate(car.x, car.y);
-        ctx.rotate(car.angle);
       }
 
       function drawCarEffects(car, dimensions) {
@@ -8304,63 +8241,6 @@
         ctx.beginPath();
         ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, 2 * Math.PI);
         ctx.fill();
-      }
-
-      function drawWheel(x, y, width, height, isFront) {
-        ctx.save();
-        ctx.translate(x, y);
-
-        // Wheel shadow
-        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-        ctx.beginPath();
-        ctx.ellipse(1, 1, width / 2 + 1, height / 2 + 1, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Main tire
-        ctx.fillStyle = "#1a1a1a";
-        ctx.beginPath();
-        ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Tire sidewall
-        ctx.strokeStyle = "#333333";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Rim
-        const rimGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, width / 3);
-        rimGradient.addColorStop(0, "#888888");
-        rimGradient.addColorStop(0.7, "#444444");
-        rimGradient.addColorStop(1, "#222222");
-
-        ctx.fillStyle = rimGradient;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, width / 3, height / 3, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Spokes
-        ctx.strokeStyle = "#666666";
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i < 5; i++) {
-          const angle = (i / 5) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(
-            (Math.cos(angle) * width) / 3,
-            (Math.sin(angle) * height) / 3
-          );
-          ctx.stroke();
-        }
-
-        // Brake disc
-        if (isFront) {
-          ctx.fillStyle = "#666666";
-          ctx.beginPath();
-          ctx.ellipse(0, 0, width / 4, height / 4, 0, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-
-        ctx.restore();
       }
 
       // Helper function to shade colors
@@ -8841,6 +8721,358 @@
        * Executes every frame to update game state and render all visual elements.
        * This function coordinates all game systems in the correct order.
        */
+      /**
+       * Sound System
+       *
+       * Every sound is synthesised with the Web Audio API, so no audio files are needed:
+       * engine notes that rise through the gears (player plus the nearest AI cars), tyre
+       * screech that builds as grip runs out, a nitro hiss, and impact sounds for collisions
+       * and excursions off the track. The AudioContext is created on the first user gesture.
+       */
+      const SOUND_MUTED_KEY = "circuitRacerSoundMuted";
+      const MASTER_LEVEL = 0.7;
+      const ENGINE_GEARS = 7;
+      const AI_ENGINE_VOICES = 3;
+      let soundMuted = localStorage.getItem(SOUND_MUTED_KEY) === "1";
+      let audio = null;
+
+      function clamp01(value) {
+        return Math.max(0, Math.min(1, value));
+      }
+
+      function createNoiseBuffer(context, seconds = 2) {
+        const buffer = context.createBuffer(1, Math.floor(context.sampleRate * seconds), context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        return buffer;
+      }
+
+      function softClipCurve(amount) {
+        const curve = new Float32Array(512);
+        for (let i = 0; i < curve.length; i++) {
+          const x = (i / (curve.length - 1)) * 2 - 1;
+          curve[i] = ((1 + amount) * x) / (1 + amount * Math.abs(x));
+        }
+        return curve;
+      }
+
+      function createPanner(context, destination) {
+        if (typeof context.createStereoPanner !== "function") return null;
+        const panner = context.createStereoPanner();
+        panner.connect(destination);
+        return panner;
+      }
+
+      function createEngineVoice(context, destination) {
+        const oscillators = [
+          { node: context.createOscillator(), type: "sawtooth", ratio: 1, detune: 0 },
+          { node: context.createOscillator(), type: "square", ratio: 0.5, detune: 6 },
+          { node: context.createOscillator(), type: "sawtooth", ratio: 2, detune: -5 },
+        ];
+        const shaper = context.createWaveShaper();
+        shaper.curve = softClipCurve(2.5);
+        shaper.oversample = "2x";
+        const filter = context.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.Q.value = 1.1;
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        const panner = createPanner(context, destination);
+
+        oscillators.forEach((oscillator) => {
+          oscillator.node.type = oscillator.type;
+          oscillator.node.detune.value = oscillator.detune;
+          oscillator.node.connect(shaper);
+          oscillator.node.start();
+        });
+        shaper.connect(filter);
+        filter.connect(gain);
+        gain.connect(panner || destination);
+
+        return { oscillators, filter, gain, panner, gear: -2, level: 0 };
+      }
+
+      function setEngineVoice(voice, rpm, throttle, level, pan) {
+        const context = audio.context;
+        const now = context.currentTime;
+        const fundamental = 42 + rpm * 205;
+        voice.oscillators.forEach((oscillator) => {
+          oscillator.node.frequency.setTargetAtTime(fundamental * oscillator.ratio, now, 0.03);
+        });
+        voice.filter.frequency.setTargetAtTime(240 + rpm * 1900 + throttle * 900, now, 0.05);
+        voice.gain.gain.setTargetAtTime(level, now, 0.05);
+        if (voice.panner) voice.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), now, 0.08);
+        voice.level = level;
+      }
+
+      // Gear and rev estimate from how close the car is to its top speed
+      function estimateEngineState(car, throttle) {
+        const speed = Math.hypot(car.velocity.x, car.velocity.y);
+        const ratio = clamp01(speed / (car.maxSpeed * 1.3));
+        if (ratio < 0.025) return { rpm: 0.12 + throttle * 0.3, gear: -1 };
+        const shaped = Math.pow(ratio, 0.75) * ENGINE_GEARS;
+        const gear = Math.min(ENGINE_GEARS - 1, Math.floor(shaped));
+        return { rpm: 0.36 + (shaped - gear) * 0.64, gear };
+      }
+
+      function createScreechVoice(context, destination) {
+        const source = context.createBufferSource();
+        source.buffer = audio.noiseBuffer;
+        source.loop = true;
+        const filter = context.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1800;
+        filter.Q.value = 3;
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        const panner = createPanner(context, destination);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(panner || destination);
+        source.start();
+        return { filter, gain, panner };
+      }
+
+      function setScreechVoice(voice, usage, pan) {
+        const now = audio.context.currentTime;
+        const wetFactor = gameWeather === "clear" ? 1 : 0.5;
+        const level = Math.pow(clamp01(usage), 1.6) * 0.5 * wetFactor;
+        voice.gain.gain.setTargetAtTime(level, now, 0.04);
+        voice.filter.frequency.setTargetAtTime(1500 + usage * 1100 + (Math.random() - 0.5) * 160, now, 0.03);
+        if (voice.panner) voice.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), now, 0.08);
+      }
+
+      function ensureAudio() {
+        if (audio) {
+          if (audio.context.state === "suspended") audio.context.resume().catch(() => {});
+          return audio;
+        }
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+
+        const context = new AudioContextClass();
+        const master = context.createGain();
+        master.gain.value = soundMuted ? 0 : MASTER_LEVEL;
+        const compressor = context.createDynamicsCompressor();
+        compressor.threshold.value = -14;
+        compressor.ratio.value = 6;
+        master.connect(compressor);
+        compressor.connect(context.destination);
+        audio = { context, master, noiseBuffer: createNoiseBuffer(context) };
+
+        audio.playerEngine = createEngineVoice(context, master);
+        audio.aiEngines = Array.from({ length: AI_ENGINE_VOICES }, () => createEngineVoice(context, master));
+        audio.playerScreech = createScreechVoice(context, master);
+        audio.aiScreech = createScreechVoice(context, master);
+
+        const nitroSource = context.createBufferSource();
+        nitroSource.buffer = audio.noiseBuffer;
+        nitroSource.loop = true;
+        const nitroFilter = context.createBiquadFilter();
+        nitroFilter.type = "highpass";
+        nitroFilter.frequency.value = 2600;
+        const nitroGain = context.createGain();
+        nitroGain.gain.value = 0;
+        nitroSource.connect(nitroFilter);
+        nitroFilter.connect(nitroGain);
+        nitroGain.connect(master);
+        nitroSource.start();
+        audio.nitroGain = nitroGain;
+
+        return audio;
+      }
+
+      function setSoundMuted(muted) {
+        soundMuted = muted;
+        localStorage.setItem(SOUND_MUTED_KEY, muted ? "1" : "0");
+        if (audio) audio.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, audio.context.currentTime, 0.02);
+        document.querySelectorAll(".sound-toggle").forEach((button) => {
+          button.textContent = muted ? "Sound: Off" : "Sound: On";
+          button.setAttribute("aria-pressed", muted ? "false" : "true");
+        });
+      }
+
+      function toggleSound() {
+        setSoundMuted(!soundMuted);
+        if (!soundMuted) ensureAudio();
+      }
+
+      function silenceAudio() {
+        if (!audio) return;
+        const now = audio.context.currentTime;
+        [audio.playerEngine, ...audio.aiEngines].forEach((voice) => voice.gain.gain.setTargetAtTime(0, now, 0.05));
+        [audio.playerScreech, audio.aiScreech].forEach((voice) => voice.gain.gain.setTargetAtTime(0, now, 0.05));
+        audio.nitroGain.gain.setTargetAtTime(0, now, 0.05);
+      }
+
+      function proximityLevel(x, y) {
+        const distance = Math.hypot(x - player.x, y - player.y);
+        return Math.pow(clamp01(1 - distance / 900), 1.5);
+      }
+
+      function panFor(x) {
+        return (x - player.x) / (canvas.width / 2);
+      }
+
+      // How hard the player's tyres are working: slip angle, hard braking or heavy steering at speed
+      function playerGripUsage() {
+        const speed = Math.hypot(player.velocity.x, player.velocity.y);
+        if (speed < 1.5 || player.surface === "grass") return 0;
+        const movementAngle = Math.atan2(player.velocity.y, player.velocity.x);
+        const slip = Math.abs(normalizeAngle(player.angle - movementAngle));
+        let usage = (slip - 0.08) / 0.28;
+        if (player.brakeInput && speed > 3.5) usage = Math.max(usage, Math.min(0.6, speed / 12));
+        if (Math.abs(player.steerInput || 0) > 0 && speed > 4.5) usage = Math.max(usage, 0.2 + (speed - 4.5) / 8);
+        return clamp01(usage);
+      }
+
+      function updateAudio() {
+        if (!audio) return;
+        if (!gameRunning || layoutPaused || document.hidden || soundMuted) {
+          silenceAudio();
+          return;
+        }
+
+        const throttle = player.throttleInput || 0;
+        const engine = estimateEngineState(player, throttle);
+        const voice = audio.playerEngine;
+        let level = 0.26 + throttle * 0.14 + (player.usingNitro ? 0.08 : 0);
+        if (voice.gear !== engine.gear && voice.gear !== -2 && engine.gear >= 0) {
+          // Brief lift on the gear change
+          const now = audio.context.currentTime;
+          voice.gain.gain.cancelScheduledValues(now);
+          voice.gain.gain.setTargetAtTime(level * 0.35, now, 0.01);
+          voice.gain.gain.setTargetAtTime(level, now + 0.07, 0.03);
+          level = voice.gain.gain.value;
+        }
+        voice.gear = engine.gear;
+        setEngineVoice(voice, engine.rpm, throttle, level, 0);
+
+        if (isTimeTrialMode) {
+          audio.aiEngines.forEach((aiVoice) => setEngineVoice(aiVoice, 0.2, 0, 0, 0));
+          setScreechVoice(audio.aiScreech, 0, 0);
+        } else {
+          const nearest = aiCars
+            .map((car) => ({ car, distance: Math.hypot(car.x - player.x, car.y - player.y) }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, AI_ENGINE_VOICES);
+          audio.aiEngines.forEach((aiVoice, index) => {
+            const entry = nearest[index];
+            if (!entry) {
+              setEngineVoice(aiVoice, 0.2, 0, 0, 0);
+              return;
+            }
+            const accelerating = entry.car.speed >= (entry.car.previousSpeedForAudio || 0) - 0.005;
+            entry.car.previousSpeedForAudio = entry.car.speed;
+            const aiThrottle = accelerating ? 0.9 : 0.2;
+            const aiEngine = estimateEngineState(entry.car, aiThrottle);
+            const attenuation = Math.pow(clamp01(1 - entry.distance / 650), 2);
+            setEngineVoice(aiVoice, aiEngine.rpm, aiThrottle, 0.16 * attenuation, panFor(entry.car.x));
+          });
+
+          let aiUsage = 0;
+          let aiPan = 0;
+          aiCars.forEach((car) => {
+            if (!car.isSliding || car.surface === "grass") return;
+            const weight = Math.pow(clamp01(1 - Math.hypot(car.x - player.x, car.y - player.y) / 600), 2);
+            if (weight > aiUsage) {
+              aiUsage = weight;
+              aiPan = panFor(car.x);
+            }
+          });
+          setScreechVoice(audio.aiScreech, aiUsage * 0.6, aiPan);
+        }
+
+        setScreechVoice(audio.playerScreech, playerGripUsage(), 0);
+        audio.nitroGain.gain.setTargetAtTime(player.usingNitro ? 0.14 : 0, audio.context.currentTime, 0.06);
+      }
+
+      function playImpactSound(x, y, severity) {
+        if (!audio || soundMuted || layoutPaused) return;
+        const level = clamp01(severity) * proximityLevel(x, y);
+        if (level < 0.02) return;
+        const context = audio.context;
+        const now = context.currentTime;
+        const output = createPanner(context, audio.master) || audio.master;
+        if (output.pan) output.pan.value = Math.max(-1, Math.min(1, panFor(x)));
+
+        const thump = context.createOscillator();
+        thump.type = "sine";
+        thump.frequency.setValueAtTime(160, now);
+        thump.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+        const thumpGain = context.createGain();
+        thumpGain.gain.setValueAtTime(level * 0.9, now);
+        thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        thump.connect(thumpGain);
+        thumpGain.connect(output);
+        thump.start(now);
+        thump.stop(now + 0.25);
+
+        const crunch = context.createBufferSource();
+        crunch.buffer = audio.noiseBuffer;
+        const crunchFilter = context.createBiquadFilter();
+        crunchFilter.type = "lowpass";
+        crunchFilter.frequency.setValueAtTime(1400, now);
+        crunchFilter.frequency.exponentialRampToValueAtTime(300, now + 0.2);
+        const crunchGain = context.createGain();
+        crunchGain.gain.setValueAtTime(level * 0.7, now);
+        crunchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        crunch.connect(crunchFilter);
+        crunchFilter.connect(crunchGain);
+        crunchGain.connect(output);
+        crunch.start(now);
+        crunch.stop(now + 0.26);
+
+        [920, 1460].forEach((frequency) => {
+          const clank = context.createOscillator();
+          clank.type = "triangle";
+          clank.frequency.value = frequency * (0.95 + Math.random() * 0.1);
+          const clankGain = context.createGain();
+          clankGain.gain.setValueAtTime(level * 0.22, now);
+          clankGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          clank.connect(clankGain);
+          clankGain.connect(output);
+          clank.start(now);
+          clank.stop(now + 0.12);
+        });
+      }
+
+      function playOffTrackSound(car) {
+        if (!audio || soundMuted || layoutPaused) return;
+        const now = gameNow();
+        if (car.lastOffTrackSoundTime && now - car.lastOffTrackSoundTime < 500) return;
+        car.lastOffTrackSoundTime = now;
+        const level = clamp01(Math.hypot(car.velocity.x, car.velocity.y) / 8) * proximityLevel(car.x, car.y) * 0.4;
+        if (level < 0.02) return;
+        const context = audio.context;
+        const time = context.currentTime;
+        const rumble = context.createBufferSource();
+        rumble.buffer = audio.noiseBuffer;
+        const filter = context.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 320;
+        const gain = context.createGain();
+        gain.gain.setValueAtTime(level, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
+        rumble.connect(filter);
+        filter.connect(gain);
+        gain.connect(audio.master);
+        rumble.start(time);
+        rumble.stop(time + 0.4);
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (!audio) return;
+        if (document.hidden) audio.context.suspend().catch(() => {});
+        else if (!soundMuted) audio.context.resume().catch(() => {});
+      });
+      ["pointerdown", "keydown"].forEach((type) =>
+        document.addEventListener(type, () => {
+          if (audio && audio.context.state === "suspended" && !document.hidden) audio.context.resume().catch(() => {});
+        })
+      );
+      setSoundMuted(soundMuted);
+
       // Store final race standings when race completes
       let finalRaceStandings = [];
       
@@ -8916,11 +9148,14 @@
         while (simulationAccumulatorMs >= SIMULATION_STEP_MS) {
           simulationAccumulatorMs -= SIMULATION_STEP_MS;
           if (gameRunning) {
+            snapshotRenderState();
             simulationTimeMs += SIMULATION_STEP_MS;
             updateSimulationStep();
           }
           updateEffects();
         }
+        renderAlpha = gameRunning ? simulationAccumulatorMs / SIMULATION_STEP_MS : 1;
+        updateAudio();
 
         // Apply camera transformation matrix for world-space rendering
         applyCameraTransform();
@@ -8956,6 +9191,7 @@
       // Start race
       function startRace() {
         document.getElementById("startScreen").style.display = "none";
+        ensureAudio();
 
         // Show broadcast bar and game UI
         document.querySelector(".broadcast-bar").style.display = "flex";
