@@ -1,0 +1,368 @@
+/* Touch devices: on-screen driving controls */
+body {
+  overscroll-behavior: none;
+}
+
+#gameCanvas {
+  touch-action: none;
+}
+
+.touch-only {
+  display: none;
+}
+
+.touch-device .touch-only {
+  display: block;
+}
+
+.touch-device .keyboard-only,
+.touch-device .controls-info,
+.touch-device .broadcast-bar {
+  display: none !important;
+}
+
+.touch-controls {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.touch-device .game-running .touch-controls {
+  display: block;
+}
+
+.touch-cluster {
+  position: absolute;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 10px;
+}
+
+.touch-steer {
+  left: calc(14px + env(safe-area-inset-left));
+  grid-template-columns: repeat(2, 84px);
+  grid-template-rows: 84px;
+}
+
+.touch-pedals {
+  right: calc(14px + env(safe-area-inset-right));
+  grid-template-columns: 78px 84px;
+  grid-template-rows: 64px 84px;
+  grid-template-areas:
+    "nitro throttle"
+    "brake throttle";
+}
+
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font: 700 0.75rem "Arial", "Helvetica", sans-serif;
+  letter-spacing: 1px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.08s, transform 0.08s;
+}
+
+.touch-btn svg {
+  width: 40px;
+  height: 40px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.touch-btn.pressed {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: #ffffff;
+  transform: scale(0.95);
+}
+
+.touch-throttle {
+  grid-area: throttle;
+  border-color: rgba(60, 220, 120, 0.85);
+}
+
+.touch-brake {
+  grid-area: brake;
+  border-color: rgba(255, 90, 90, 0.85);
+}
+
+.touch-nitro {
+  grid-area: nitro;
+  border-color: rgba(90, 170, 255, 0.85);
+}
+
+/* Landscape: prompt phones held upright to turn sideways */
+.rotate-prompt {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  color: var(--text-primary);
+}
+
+.rotate-prompt h2 {
+  color: var(--primary-text-color, var(--primary-color));
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+}
+
+.rotate-prompt p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.rotate-phone {
+  width: 56px;
+  height: 96px;
+  margin-bottom: 1rem;
+  border: 4px solid var(--text-primary);
+  border-radius: 12px;
+  animation: rotatePhone 2.4s ease-in-out infinite;
+}
+
+@keyframes rotatePhone {
+  0%,
+  25% {
+    transform: rotate(0deg);
+  }
+
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+
+.rotate-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .touch-device:not(.rotate-dismissed) .rotate-prompt {
+    display: flex;
+  }
+}
+
+.landscape-btn {
+  display: none;
+}
+
+.touch-device.fullscreen-supported .landscape-btn {
+  display: inline-block;
+}
+
+:root:fullscreen .landscape-btn {
+  display: none;
+}
+
+.start-screen .landscape-btn {
+  margin: 0 auto 0.5rem auto;
+}
+
+.team-carousel {
+  touch-action: pan-y;
+}
+
+/* Short landscape screens (phones): full-screen track with a compact HUD */
+@media (orientation: landscape) and (max-height: 540px) {
+  .game-container {
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  #gameCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .broadcast-bar,
+  .controls-info {
+    display: none !important;
+  }
+
+  .game-running .hud-rail {
+    display: contents;
+  }
+
+  .game-running #gameCanvas {
+    max-width: none;
+    max-height: none;
+  }
+
+  .hud-rail .ui-overlay,
+  .hud-rail .position-display {
+    position: absolute;
+    z-index: 10;
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .hud-rail .position-display {
+    overflow: visible;
+    width: 180px;
+  }
+
+  .hud-rail .ui-overlay {
+    max-width: 170px;
+  }
+
+  .hud-rail .ui-item.speed-item {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0;
+  }
+
+  .hud-rail .ui-item.speed-item span:first-child,
+  .hud-rail .ui-item.speed-item span:last-child {
+    display: inline;
+    font-size: 0.65rem;
+    line-height: inherit;
+    color: var(--text-primary);
+    text-shadow: none;
+  }
+
+  .hud-rail .ui-item.speed-item span:first-child {
+    color: var(--text-secondary);
+  }
+
+  .ui-overlay,
+  .position-display {
+    top: max(6px, env(safe-area-inset-top));
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  .ui-overlay {
+    left: max(6px, env(safe-area-inset-left));
+    min-width: 0;
+    max-width: 170px;
+  }
+
+  .ui-overlay > div:first-child,
+  .position-display > div:first-child {
+    display: none;
+  }
+
+  .ui-item {
+    min-width: 140px;
+    margin-bottom: 0;
+    padding: 0.05rem 0;
+  }
+
+  .ui-item span:first-child,
+  .ui-item span:last-child {
+    font-size: 0.65rem;
+  }
+
+  .position-display {
+    right: max(6px, env(safe-area-inset-right));
+    width: 180px;
+  }
+
+  .position-item {
+    margin: 0;
+    padding: 0;
+    height: 18px;
+    font-size: 0.68rem;
+  }
+
+  /* Time trial rows drop the date and shorten long names to fit */
+  .time-trial-item {
+    gap: 4px;
+  }
+
+  .time-trial-item > span {
+    flex-shrink: 0;
+  }
+
+  .time-trial-item .time-trial-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .time-trial-item .time-trial-date {
+    display: none !important;
+  }
+
+  /* Show the top five and the player's own row */
+  .position-item:nth-child(n + 6):not(.player-pos) {
+    display: none;
+  }
+
+  #ghostingIndicator {
+    top: max(6px, env(safe-area-inset-top)) !important;
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .team-selection-screen {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 0.5rem 1rem 1rem;
+  }
+
+  .team-selection-title {
+    font-size: 1.6rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .team-selection-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .teams-grid {
+    zoom: 0.5;
+    margin-bottom: 0.5rem;
+  }
+
+  .start-screen h1.title {
+    font-size: 1.6rem;
+  }
+
+  .race-complete,
+  .name-input-modal,
+  .leaderboard {
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    padding: 1rem;
+  }
+}
