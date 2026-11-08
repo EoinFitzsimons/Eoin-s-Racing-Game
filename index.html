@@ -7949,9 +7949,22 @@
         traceTrackPath(g);
         g.strokeStyle = style;
         g.lineWidth = width;
+        // Round caps would stretch every dash by half the line width and hide the gaps
+        g.lineCap = dash ? "butt" : "round";
         g.setLineDash(dash || []);
         g.stroke();
         g.setLineDash([]);
+        g.lineCap = "round";
+      }
+
+      function distanceToTrackCentre(x, y) {
+        let best = Infinity;
+        for (let i = 0; i < track.path.length; i++) {
+          const current = track.path[i];
+          const next = track.path[(i + 1) % track.path.length];
+          best = Math.min(best, distanceToLineSegmentWithInfo(x, y, current.x, current.y, next.x, next.y).distance);
+        }
+        return best;
       }
 
       function trackDirectionAt(x, y) {
@@ -7986,12 +7999,16 @@
         }
         g.restore();
 
-        // Grid slots match the AI starting positions behind the line
+        // Grid slots match the AI starting positions behind the line, where those sit on the tarmac
         g.strokeStyle = "rgba(255,255,255,0.7)";
         g.lineWidth = 1.5;
         for (let row = 1; row <= 8; row++) {
           for (const side of [-1, 1]) {
-            g.strokeRect(1000 + side * 30 - 7, 1350 + row * 35 + side * 3 - 13, 14, 26);
+            const x = 1000 + side * 30;
+            const y = 1350 + row * 35 + side * 3;
+            if (distanceToTrackCentre(x, y) <= track.width / 2 - 22) {
+              g.strokeRect(x - 7, y - 13, 14, 26);
+            }
           }
         }
       }
