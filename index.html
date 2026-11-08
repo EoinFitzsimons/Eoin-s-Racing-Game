@@ -8937,17 +8937,16 @@
         const throttle = player.throttleInput || 0;
         const engine = estimateEngineState(player, throttle);
         const voice = audio.playerEngine;
-        let level = 0.26 + throttle * 0.14 + (player.usingNitro ? 0.08 : 0);
+        const level = 0.26 + throttle * 0.14 + (player.usingNitro ? 0.08 : 0);
+        setEngineVoice(voice, engine.rpm, throttle, level, 0);
         if (voice.gear !== engine.gear && voice.gear !== -2 && engine.gear >= 0) {
-          // Brief lift on the gear change
+          // Brief lift on the gear change, scheduled after the steady level so it is not overridden
           const now = audio.context.currentTime;
           voice.gain.gain.cancelScheduledValues(now);
           voice.gain.gain.setTargetAtTime(level * 0.35, now, 0.01);
           voice.gain.gain.setTargetAtTime(level, now + 0.07, 0.03);
-          level = voice.gain.gain.value;
         }
         voice.gear = engine.gear;
-        setEngineVoice(voice, engine.rpm, throttle, level, 0);
 
         if (isTimeTrialMode) {
           audio.aiEngines.forEach((aiVoice) => setEngineVoice(aiVoice, 0.2, 0, 0, 0));
