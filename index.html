@@ -7337,6 +7337,7 @@
           Math.abs(x - startFinishArea.centerX) <= startFinishArea.width / 2 &&
           Math.abs(y - startFinishArea.centerY) <= startFinishArea.height / 2
         ) {
+          window.lastTrackSurfaceInfo = { surface: "asphalt", gripModifier: 1.0, distanceFromCenter: 0, segmentInfo: null };
           return true; // Always allow cars in the starting area
         }
 
