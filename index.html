@@ -1603,6 +1603,66 @@
         }
       }
 
+      /* Narrow screens (phones held upright): the rails would leave no room for the track, so the
+         panels float over the canvas as they did before */
+      @media (max-width: 900px) {
+        .game-running .hud-rail {
+          display: contents;
+        }
+
+        .game-running #gameCanvas {
+          max-width: 90vw;
+          max-height: 60vh;
+          border-radius: 12px;
+        }
+
+        .hud-rail .ui-overlay,
+        .hud-rail .position-display {
+          position: absolute;
+          z-index: 10;
+          padding: 0.6rem;
+          background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 8px;
+        }
+
+        .hud-rail .ui-overlay {
+          top: 10px;
+          left: 10px;
+          max-width: 170px;
+        }
+
+        .hud-rail .position-display {
+          top: 10px;
+          right: 10px;
+          width: 180px;
+          overflow: visible;
+        }
+
+        .hud-rail .controls-info {
+          display: none;
+        }
+
+        .hud-rail .ui-item.speed-item {
+          display: flex;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          margin-bottom: 0;
+        }
+
+        .hud-rail .ui-item.speed-item span:first-child,
+        .hud-rail .ui-item.speed-item span:last-child {
+          display: inline;
+          font-size: 0.75rem;
+          line-height: inherit;
+          color: var(--text-primary);
+          text-shadow: none;
+        }
+
+        .hud-rail .ui-item.speed-item span:first-child {
+          color: var(--text-secondary);
+        }
+      }
+
       /* Touch devices: on-screen driving controls */
       body {
         overscroll-behavior: none;
