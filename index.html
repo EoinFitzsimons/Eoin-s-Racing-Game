@@ -3910,7 +3910,7 @@
       document.addEventListener("keydown", (e) => {
         keys[e.code] = true;
 
-        if (e.code === "KeyM" && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+        if (e.code === "KeyM" && !e.repeat && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
           toggleSound();
         }
 
