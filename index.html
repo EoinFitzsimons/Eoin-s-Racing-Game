@@ -9011,7 +9011,13 @@
        * and excursions off the track. The AudioContext is created on the first user gesture.
        */
       const SOUND_MUTED_KEY = "circuitRacerSoundMuted";
-      const MASTER_LEVEL = 0.7;
+      const MASTER_LEVEL = 0.45;
+      // Engine loops cut from a Formula 1 car recording (Freesound #181187 by Ears68, CC0):
+      // a 200 Hz idle and a 538 Hz full-throttle scream, pitched up and down with the revs
+      const ENGINE_SAMPLES = {
+        idle: "assets/audio/engine-idle.mp3",
+        high: "assets/audio/engine-high.mp3",
+      };
       const ENGINE_GEARS = 7;
       const AI_ENGINE_VOICES = 3;
       let soundMuted = localStorage.getItem(SOUND_MUTED_KEY) === "1";
@@ -9044,7 +9050,44 @@
         return panner;
       }
 
+      function smoothstep(edge0, edge1, value) {
+        const t = clamp01((value - edge0) / (edge1 - edge0));
+        return t * t * (3 - 2 * t);
+      }
+
+      function createSampleLayer(context, buffer, destination) {
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        source.connect(gain);
+        gain.connect(destination);
+        source.start();
+        return { source, gain };
+      }
+
       function createEngineVoice(context, destination) {
+        if (audio.engineBuffers) {
+          const filter = context.createBiquadFilter();
+          filter.type = "lowpass";
+          filter.Q.value = 0.7;
+          const gain = context.createGain();
+          gain.gain.value = 0;
+          const panner = createPanner(context, destination);
+          filter.connect(gain);
+          gain.connect(panner || destination);
+          return {
+            sampled: true,
+            idle: createSampleLayer(context, audio.engineBuffers.idle, filter),
+            high: createSampleLayer(context, audio.engineBuffers.high, filter),
+            filter,
+            gain,
+            panner,
+            gear: -2,
+            level: 0,
+          };
+        }
         const oscillators = [
           { node: context.createOscillator(), type: "sawtooth", ratio: 1, detune: 0 },
           { node: context.createOscillator(), type: "square", ratio: 0.5, detune: 6 },
@@ -9076,11 +9119,21 @@
       function setEngineVoice(voice, rpm, throttle, level, pan) {
         const context = audio.context;
         const now = context.currentTime;
-        const fundamental = 42 + rpm * 205;
-        voice.oscillators.forEach((oscillator) => {
-          oscillator.node.frequency.setTargetAtTime(fundamental * oscillator.ratio, now, 0.03);
-        });
-        voice.filter.frequency.setTargetAtTime(240 + rpm * 1900 + throttle * 900, now, 0.05);
+        if (voice.sampled) {
+          // Crossfade from the idle loop to the full-throttle loop as the revs rise, pitching both
+          const highMix = smoothstep(0.12, 0.5, rpm);
+          voice.idle.gain.gain.setTargetAtTime(1 - highMix, now, 0.06);
+          voice.high.gain.gain.setTargetAtTime(highMix, now, 0.06);
+          voice.idle.source.playbackRate.setTargetAtTime(0.85 + rpm * 1.5, now, 0.05);
+          voice.high.source.playbackRate.setTargetAtTime(0.32 + rpm * 0.93, now, 0.05);
+          voice.filter.frequency.setTargetAtTime(900 + rpm * 2600 + throttle * 3500, now, 0.08);
+        } else {
+          const fundamental = 42 + rpm * 205;
+          voice.oscillators.forEach((oscillator) => {
+            oscillator.node.frequency.setTargetAtTime(fundamental * oscillator.ratio, now, 0.03);
+          });
+          voice.filter.frequency.setTargetAtTime(240 + rpm * 1900 + throttle * 900, now, 0.05);
+        }
         voice.gain.gain.setTargetAtTime(level, now, 0.05);
         if (voice.panner) voice.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), now, 0.08);
         voice.level = level;
@@ -9103,7 +9156,7 @@
         const filter = context.createBiquadFilter();
         filter.type = "bandpass";
         filter.frequency.value = 1800;
-        filter.Q.value = 3;
+        filter.Q.value = 1.6;
         const gain = context.createGain();
         gain.gain.value = 0;
         const panner = createPanner(context, destination);
@@ -9117,10 +9170,22 @@
       function setScreechVoice(voice, usage, pan) {
         const now = audio.context.currentTime;
         const wetFactor = gameWeather === "clear" ? 1 : 0.5;
-        const level = Math.pow(clamp01(usage), 1.6) * 0.5 * wetFactor;
-        voice.gain.gain.setTargetAtTime(level, now, 0.04);
-        voice.filter.frequency.setTargetAtTime(1500 + usage * 1100 + (Math.random() - 0.5) * 160, now, 0.03);
+        const level = Math.pow(clamp01(usage), 1.8) * 0.22 * wetFactor;
+        voice.gain.gain.setTargetAtTime(level, now, 0.06);
+        voice.filter.frequency.setTargetAtTime(1700 + usage * 900 + (Math.random() - 0.5) * 120, now, 0.05);
         if (voice.panner) voice.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), now, 0.08);
+      }
+
+      async function loadEngineSamples(context) {
+        const entries = await Promise.all(
+          Object.entries(ENGINE_SAMPLES).map(async ([name, url]) => {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`${url}: ${response.status}`);
+            const buffer = await context.decodeAudioData(await response.arrayBuffer());
+            return [name, buffer];
+          })
+        );
+        return Object.fromEntries(entries);
       }
 
       function ensureAudio() {
@@ -9139,10 +9204,19 @@
         compressor.ratio.value = 6;
         master.connect(compressor);
         compressor.connect(context.destination);
-        audio = { context, master, noiseBuffer: createNoiseBuffer(context) };
+        audio = { context, master, noiseBuffer: createNoiseBuffer(context), engineBuffers: null };
 
-        audio.playerEngine = createEngineVoice(context, master);
-        audio.aiEngines = Array.from({ length: AI_ENGINE_VOICES }, () => createEngineVoice(context, master));
+        loadEngineSamples(context)
+          .then((buffers) => {
+            audio.engineBuffers = buffers;
+          })
+          .catch(() => {
+            // Opened from disk or offline: fall back to the synthesised engine
+          })
+          .finally(() => {
+            audio.playerEngine = createEngineVoice(context, master);
+            audio.aiEngines = Array.from({ length: AI_ENGINE_VOICES }, () => createEngineVoice(context, master));
+          });
         audio.playerScreech = createScreechVoice(context, master);
         audio.aiScreech = createScreechVoice(context, master);
 
@@ -9181,7 +9255,9 @@
       function silenceAudio() {
         if (!audio) return;
         const now = audio.context.currentTime;
-        [audio.playerEngine, ...audio.aiEngines].forEach((voice) => voice.gain.gain.setTargetAtTime(0, now, 0.05));
+        if (audio.playerEngine) {
+          [audio.playerEngine, ...audio.aiEngines].forEach((voice) => voice.gain.gain.setTargetAtTime(0, now, 0.05));
+        }
         [audio.playerScreech, audio.aiScreech].forEach((voice) => voice.gain.gain.setTargetAtTime(0, now, 0.05));
         audio.nitroGain.gain.setTargetAtTime(0, now, 0.05);
       }
@@ -9214,10 +9290,14 @@
           return;
         }
 
+        setScreechVoice(audio.playerScreech, playerGripUsage(), 0);
+        audio.nitroGain.gain.setTargetAtTime(player.usingNitro ? 0.08 : 0, audio.context.currentTime, 0.06);
+        if (!audio.playerEngine) return;
+
         const throttle = player.throttleInput || 0;
         const engine = estimateEngineState(player, throttle);
         const voice = audio.playerEngine;
-        const level = 0.26 + throttle * 0.14 + (player.usingNitro ? 0.08 : 0);
+        const level = 0.3 + throttle * 0.12 + (player.usingNitro ? 0.06 : 0);
         setEngineVoice(voice, engine.rpm, throttle, level, 0);
         if (voice.gear !== engine.gear && voice.gear !== -2 && engine.gear >= 0) {
           // Brief lift on the gear change, scheduled after the steady level so it is not overridden
@@ -9247,7 +9327,7 @@
             const aiThrottle = accelerating ? 0.9 : 0.2;
             const aiEngine = estimateEngineState(entry.car, aiThrottle);
             const attenuation = Math.pow(clamp01(1 - entry.distance / 650), 2);
-            setEngineVoice(aiVoice, aiEngine.rpm, aiThrottle, 0.16 * attenuation, panFor(entry.car.x));
+            setEngineVoice(aiVoice, aiEngine.rpm, aiThrottle, 0.12 * attenuation, panFor(entry.car.x));
           });
 
           let aiUsage = 0;
@@ -9263,8 +9343,6 @@
           setScreechVoice(audio.aiScreech, aiUsage * 0.6, aiPan);
         }
 
-        setScreechVoice(audio.playerScreech, playerGripUsage(), 0);
-        audio.nitroGain.gain.setTargetAtTime(player.usingNitro ? 0.14 : 0, audio.context.currentTime, 0.06);
       }
 
       function playImpactSound(x, y, severity) {
