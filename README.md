@@ -98,6 +98,12 @@ Each team features:
 | **D** / **→** | Turn Right    |
 | **SPACE**            | Nitro Boost   |
 
+### Phones and Tablets
+
+On a touch screen, on-screen buttons appear during the race: steer with the arrows on the bottom left, and use **THROTTLE**, **BRAKE** and **NITRO** on the bottom right. You can hold several buttons at once and slide a finger between them. Swipe the team carousel to browse teams.
+
+The game plays in landscape. On a phone held upright it asks you to turn the phone sideways and pauses the race until you do. Where the browser allows it (for example Chrome on Android), **Play in Landscape** and **Full Screen** switch to full screen and lock the screen to landscape. On iPhone, turn the phone sideways, or add the game to your home screen to play without the browser bars.
+
 ## 🚀 How to Play
 
 ### 1. **Team Selection**
@@ -176,6 +182,7 @@ Each team features:
 - **Firefox**
 - **Safari**
 - **Edge**
+- **Mobile** - Chrome and Safari on phones and tablets, with touch controls in landscape
 
 ## 🎯 Installation & Setup
 
