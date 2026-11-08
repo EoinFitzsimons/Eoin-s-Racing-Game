@@ -72,6 +72,8 @@ Each team features:
 - **Comprehensive checkpoint system** preventing shortcuts
 - **Real-time collision detection** and damage system
 - **Custom weather system** with clear, rain, and storms.
+- **Synthesised sound** generated in the browser: engine notes that rise through the gears, tyre screech as grip runs out, and collision sounds
+- **Smooth circuit and detailed F1-style cars** with steering front wheels and a rain light in wet weather
 
 ### 📊 Professional HUD
 
@@ -97,6 +99,7 @@ Each team features:
 | **A** / **←** | Turn Left     |
 | **D** / **→** | Turn Right    |
 | **SPACE**            | Nitro Boost   |
+| **M**                | Sound on/off  |
 
 ### Phones and Tablets
 
@@ -144,6 +147,7 @@ The game plays in landscape. On a phone held upright it asks you to turn the pho
 - Realistic momentum and acceleration
 - Collision detection with track boundaries
 - Speed-based turning radius for authentic handling
+- Tyres screech as you approach the limit of grip, and go quiet on the grass
 
 ### **AI Racing**
 
@@ -167,7 +171,9 @@ The game plays in landscape. On a phone held upright it asks you to turn the pho
 ### **Performance Optimized**
 
 - Fixed-step physics, so speed and lap times are the same at any refresh rate
-- Efficient canvas rendering
+- The circuit is drawn once to an offscreen layer and each livery once to a sprite, then reused every frame
+- Motion is blended between physics steps, so it stays smooth on 120 Hz and 144 Hz screens
+- All sounds are synthesised with the Web Audio API, so there are no audio files to download
 - Optimized collision detection algorithms
 
 ### **Accessibility**
