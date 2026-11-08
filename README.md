@@ -72,7 +72,7 @@ Each team features:
 - **Comprehensive checkpoint system** preventing shortcuts
 - **Real-time collision detection** and damage system
 - **Custom weather system** with clear, rain, and storms.
-- **Synthesised sound** generated in the browser: engine notes that rise through the gears, tyre screech as grip runs out, and collision sounds
+- **Engine sound from a real Formula 1 car**, pitched with the revs through seven gears, plus tyre screech as grip runs out and collision sounds generated in the browser
 - **Smooth circuit and detailed F1-style cars** with steering front wheels and a rain light in wet weather
 
 ### 📊 Professional HUD
@@ -173,7 +173,7 @@ The game plays in landscape. On a phone held upright it asks you to turn the pho
 - Fixed-step physics, so speed and lap times are the same at any refresh rate
 - The circuit is drawn once to an offscreen layer and each livery once to a sprite, then reused every frame
 - Motion is blended between physics steps, so it stays smooth on 120 Hz and 144 Hz screens
-- All sounds are synthesised with the Web Audio API, so there are no audio files to download
+- The engine uses two short loops cut from a Formula 1 recording (`assets/audio/`), crossfaded and pitched with the revs through the Web Audio API; everything else is synthesised. If the loops cannot be loaded (for example when the file is opened from disk), a synthesised engine is used instead
 - Optimized collision detection algorithms
 
 ### **Accessibility**
@@ -255,6 +255,9 @@ Contributions are welcome! Feel free to:
 This project is open source.
 
 ## 🎉 Credits
+
+- Engine loops are cut from ["F-1raceCar-IdleAndRaceStartDemo"](https://freesound.org/people/Ears68/sounds/181187/) by Ears68 on Freesound, released under CC0 (public domain).
+
 
 Developed with passion for racing simulation and international motorsport culture. Each team represents the rich heritage and unique character of their respective nations.
 
