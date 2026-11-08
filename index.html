@@ -1601,6 +1601,18 @@
         .game-running #gameCanvas {
           max-width: calc(100vw - 440px);
         }
+
+        /* Five standings columns share the narrower rail */
+        .hud-rail .position-item {
+          font-size: 0.72rem;
+        }
+
+        .hud-rail .position-item > span {
+          min-width: 0;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
       }
 
       /* Narrow screens (phones held upright): the rails would leave no room for the track, so the
