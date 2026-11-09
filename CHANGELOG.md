@@ -4,6 +4,7 @@ Notable changes to Eoin's Racing Game. Entries reference the pull request that m
 
 ## Unreleased
 
+- Thirteen-attribute team model (top speed, acceleration, cornering grip, braking, aero efficiency, downforce, fuel efficiency, tyre management, reliability, pit crew, wet weather, consistency, aggression) driving both the player and the AI, with a radar chart and tooltips on the team screen; fuel load, pit stops (**P**), wet-weather grip, lap-time variance and aggression-dependent contact. Six data-driven circuits (`js/circuits.js`) with a circuit selector, mini-maps, an in-race minimap, a pit lane and per-circuit lap records and leaderboards.
 - Split `index.html` into `css/` and `js/` files, added `CONTRIBUTING.md`, `docs/ARCHITECTURE.md` and this changelog.
 
 ## 2026-11

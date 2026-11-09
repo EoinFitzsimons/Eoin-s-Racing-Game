@@ -45,6 +45,20 @@ function updateUI() {
   const redComponent = Math.floor((1 - tireCondition / 100) * 255);
   document.getElementById("tireBar").style.background = `rgb(${redComponent}, ${greenComponent}, 0)`;
 
+  // Fuel load: full tank is heavy, an empty one leaves the car limping
+  const fuelBar = document.getElementById("fuelBar");
+  if (fuelBar) {
+    const fuel = Math.max(0, Math.min(100, player.fuel ?? 100));
+    fuelBar.style.width = `${fuel}%`;
+    fuelBar.style.background = fuel < 15 ? "rgb(255, 80, 40)" : "rgb(255, 170, 40)";
+  }
+  const pitStatus = document.getElementById("pitStatus");
+  if (pitStatus) {
+    const text = typeof pitStatusText === "function" ? pitStatusText(player) : "";
+    pitStatus.textContent = text;
+    pitStatus.style.display = text ? "block" : "none";
+  }
+
   // Update lap time displays
   if (gameRunning) {
     // Current lap time

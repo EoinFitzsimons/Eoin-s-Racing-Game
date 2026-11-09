@@ -12,7 +12,8 @@ The scripts are classic `<script>` tags that share one global scope, loaded in t
 | `js/state.js` | Canvas and context, camera, race state flags, the fixed-step clock (`SIMULATION_STEP_MS`, `gameNow()`), difficulty and weather settings, lap timing variables |
 | `js/leaderboards.js` | Race and Time Trial leaderboards, import/export, `escapeHtml()`, difficulty/weather/mode pickers |
 | `js/input.js` | Keyboard state, touch controls, carousel swipe, screen layout (`updateScreenLayout()`), fullscreen and rotate prompt |
-| `js/world.js` | The circuit (`track`), the smoothed centreline (`track.path`), the `player` object, `aiCars`, grid slots, render interpolation (`renderPose()`) |
+| `js/circuits.js` | The circuit definitions (`circuits`), the live `track` object filled by `selectCircuit()`, the smoothed centreline (`buildTrackPath()`), pit-lane geometry, mini-map drawing and the start-screen circuit selector |
+| `js/world.js` | The `player` object, `aiCars`, grid slots, render interpolation (`renderPose()`) |
 | `js/ai-teams.js` | The 16 teams' attributes and the randomise/reset helpers |
 | `js/effects.js` | Tyre marks, sparks, flames, rain and lightning |
 | `js/ai-cars.js` | `createAICars()`: builds the field from the teams and difficulty |
@@ -20,6 +21,7 @@ The scripts are classic `<script>` tags that share one global scope, loaded in t
 | `js/player.js` | Player input handling, steering, nitro, tyre wear, Time Trial lap completion |
 | `js/ai.js` | AI driving: waypoints, overtaking and defending, braking, nitro |
 | `js/race.js` | Checkpoints, lap counting, race completion, standings, gaps, the standings panel |
+| `js/pits.js` | Pit stops: entry detection, kinematic lane following, the timed stop, AI pit strategy, pit-lane painting |
 | `js/track-collision.js` | On/off-track detection along `track.path`, kerb and grass penalties |
 | `js/render-track.js` | The baked track layer (tarmac, kerbs, start line, gates) and grass |
 | `js/render-cars.js` | Car sprites, wheels, effects, team codes |
@@ -38,15 +40,18 @@ The scripts are classic `<script>` tags that share one global scope, loaded in t
 
 ## The circuit
 
-`track.waypoints` are the corner points the AI aims for. `buildTrackPath()` runs a centripetal Catmull-Rom spline through them to produce `track.path`, which is what is drawn and what `isPointOnTrack()` measures against, so the kerbs you see are the kerbs that cost you grip. `getTrackLayer()` paints the whole circuit once per weather setting into an offscreen canvas; `drawTrack()` blits the visible part.
+Each entry in `circuits` is data: `waypoints` (the corner points the AI aims for), `width`, `sectors` (waypoint indices of the two sector gates) and a preferred `pitSide`. `selectCircuit(id)` copies the chosen definition into the live `track` object: `buildTrackPath()` runs a centripetal Catmull-Rom spline through the waypoints to produce `track.path`, which is what is drawn and what `isPointOnTrack()` measures against, so the kerbs you see are the kerbs that cost you grip; `track.start` is the start/finish pose (position and direction) that the grid, the finish gate (`isInStartZone()`) and race-start protection all use; `track.checkpoints` are the start line plus the sector gates; `track.pitLane` is a parallel lane beside the straight after the line. `getTrackLayer()` paints the whole circuit once per circuit and weather setting into an offscreen canvas; `drawTrack()` blits the visible part. `drawCircuitMiniMap()` draws the same path into the start-screen cards and the in-race minimap.
+
+Team ratings become physics through `carPerformanceFromAttributes()` and `applyTeamSetup()` in `js/ai-teams.js`, used for the player and every AI car; `car.setup` keeps the rated figures so damage can be layered on top and repaired in the pits.
 
 ## Persistence
 
 | Key | Contents |
 | --- | --- |
-| `circuitRacerLeaderboard` | Race results, top 10 per weather and difficulty, ranked by finishing position then time |
+| `circuitRacerLeaderboard` | Race results, top 10 per circuit, weather and difficulty, ranked by finishing position then time |
 | `circuitRacerTimeTrialLeaderboard` | Time Trial laps |
-| `circuitRacerLapRecord` | All-time fastest race lap |
+| `circuitRacerLapRecord:<circuit>` | Fastest race lap on each circuit (`circuitRacerLapRecord` without a suffix is the pre-circuit record, counted for Gleann Luais) |
+| `circuitRacerCircuit` | The last selected circuit |
 | `circuitRacerSoundMuted` | `"1"` when sound is off |
 
 Imported records are validated (name must be a non-empty string, time a positive finite number) and escaped before display.

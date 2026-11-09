@@ -8,8 +8,11 @@ function updateAI() {
 
 function updateSingleAI(ai, allCars) {
   if (handleStunnedAI(ai)) return;
+  if (updatePitStop(ai)) return;
+  considerPitStop(ai);
 
   handleRaceStartProtection(ai);
+  if (recoverStuckAI(ai)) return;
   const target = getBehaviorTarget(ai, allCars);
   updateWaypointProgression(ai);
 
@@ -66,12 +69,37 @@ function handleRaceStartProtection(ai) {
   if (gameRunning && raceTime < 3) {
     // Provide a gentle forward impulse to ensure cars move forward across the start line
     // This helps them pick up the start/finish checkpoint
-    if (ai.velocity.y > -0.5) {
-      // Only add velocity if they're not already moving fast enough
-      // This is a gentle boost that doesn't force orientation, just helps ensure movement
-      ai.velocity.y = Math.min(ai.velocity.y - 0.1, -0.5);
+    const forwardX = Math.cos(track.start.angle);
+    const forwardY = Math.sin(track.start.angle);
+    const forwardSpeed = ai.velocity.x * forwardX + ai.velocity.y * forwardY;
+    if (forwardSpeed < 0.5) {
+      const boost = Math.max(0.1, 0.5 - forwardSpeed);
+      ai.velocity.x += forwardX * boost;
+      ai.velocity.y += forwardY * boost;
     }
   }
+}
+
+// Safety net: a car boxed in or beached for a few seconds is lifted back onto the centreline
+function recoverStuckAI(ai) {
+  const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
+  if (!gameRunning || raceTime < 5) return false;
+  // Measure progress over three seconds rather than instantaneous speed, since a beached car
+  // can still jitter against the track edge
+  if (!ai.stuckAnchor) ai.stuckAnchor = { x: ai.x, y: ai.y, steps: 0 };
+  ai.stuckAnchor.steps++;
+  if (ai.stuckAnchor.steps < 180) return false;
+  const moved = Math.hypot(ai.x - ai.stuckAnchor.x, ai.y - ai.stuckAnchor.y);
+  ai.stuckAnchor = { x: ai.x, y: ai.y, steps: 0 };
+  if (moved > 40) return false;
+  const count = track.waypoints.length;
+  const behind = track.waypoints[(ai.targetWaypoint - 1 + count) % count];
+  const ahead = track.waypoints[ai.targetWaypoint];
+  ai.x = behind.x;
+  ai.y = behind.y;
+  ai.angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x);
+  ai.velocity = { x: Math.cos(ai.angle) * 1.5, y: Math.sin(ai.angle) * 1.5 };
+  return true;
 }
 
 function getBehaviorTarget(ai, allCars) {
@@ -106,7 +134,8 @@ function calculateSteering(ai, target) {
   while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
   while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-  const baseSteerRate = ai.turnSpeed;
+  // Wet weather and a full tank reduce how quickly the car can change direction
+  const baseSteerRate = ai.turnSpeed * (0.55 + 0.45 * weatherGripFor(ai)) * fuelMassFactor(ai);
   const skillMultiplier = 0.5 + ai.behavior.cornering_skill * 0.8;
   const smoothnessMultiplier = 0.3 + ai.behavior.smoothness * 0.7;
   const adjustedSteerRate =
@@ -129,7 +158,13 @@ function calculateSteering(ai, target) {
 }
 
 function calculateAccelerationMultiplier(ai, target, angleDiff) {
-  let accelerationMultiplier = ai.behavior.pace_consistency;
+  // Lap-to-lap pace varies more for inconsistent drivers; the noise is re-rolled each lap
+  if (ai.paceNoiseLap !== ai.lapsCompleted) {
+    ai.paceNoiseLap = ai.lapsCompleted;
+    const variance = ai.performance ? ai.performance.paceVariance : 0.03;
+    ai.paceNoise = 1 + (Math.random() - 0.5) * 2 * variance;
+  }
+  let accelerationMultiplier = ai.behavior.pace_consistency * (ai.paceNoise || 1) * fuelMassFactor(ai);
 
   accelerationMultiplier *= getBehaviorSpeedModifier(ai);
   accelerationMultiplier *= getCornerSpeedModifier(ai, target);
@@ -160,10 +195,11 @@ function getCornerSpeedModifier(ai, target) {
     targetDx * targetDx + targetDy * targetDy
   );
 
+  const grip = weatherGripFor(ai);
   if (targetDistance < 60) {
-    return 0.6 + ai.behavior.cornering_skill * 0.4;
+    return (0.6 + ai.behavior.cornering_skill * 0.4) * (0.7 + 0.3 * grip);
   }
-  return 1.0;
+  return 0.85 + 0.15 * grip;
 }
 
 function getBrakingModifier(ai, angleDiff) {
@@ -240,6 +276,7 @@ function applyMovementForces(ai, accelerationMultiplier) {
 
   ai.velocity.x += forceX;
   ai.velocity.y += forceY;
+  burnFuel(ai, Math.min(1, Math.max(0, accelerationMultiplier)));
 
   limitAISpeed(ai);
 }
@@ -251,6 +288,9 @@ function limitAISpeed(ai) {
   }
   if (ai.usingNitro) {
     effectiveMaxSpeed *= 1.4;
+  }
+  if (ai.fuel !== undefined && ai.fuel <= 0) {
+    effectiveMaxSpeed *= 0.55; // Out of fuel: limp home
   }
 
   const speed = Math.sqrt(
@@ -341,9 +381,11 @@ function applyAIFriction(ai) {
   const smoothnessBonus = ai.behavior.smoothness * 0.005;
 
   // Combine all friction factors with minimum threshold
+  const drag = ai.performance ? ai.performance.drag : 0.002;
+  const wetDrag = (1 - weatherGripFor(ai)) * 0.004;
   const combinedFrictionAI = Math.max(
-    0.970,
-    personalityFriction + smoothnessBonus - tireGripLoss
+    0.965,
+    personalityFriction + smoothnessBonus - tireGripLoss - drag - wetDrag
   );
 
   // Check if AI is sliding and apply additional penalties
@@ -360,13 +402,7 @@ function applyAIFriction(ai) {
 }
 
 function checkBounds(ai) {
-  const trackBounds = 2500;
-  if (
-    ai.x < -200 ||
-    ai.x > trackBounds ||
-    ai.y < -200 ||
-    ai.y > trackBounds
-  ) {
+  if (isOutsideWorld(ai.x, ai.y)) {
     const nearestWaypoint = track.waypoints[ai.targetWaypoint];
     ai.x = nearestWaypoint.x + (Math.random() - 0.5) * 60;
     ai.y = nearestWaypoint.y + (Math.random() - 0.5) * 60;

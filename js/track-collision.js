@@ -1,18 +1,7 @@
 // Track collision detection for larger track
 function isPointOnTrack(x, y) {
-  // Special handling for start/finish area - generous but not excessive
-  const startFinishArea = {
-    centerX: 1000,
-    centerY: 1300,
-    width: 200, // Wide enough for starting grid formation
-    height: 300, // Sufficient height for multiple car rows
-  };
-
-  // Check if we're in the start/finish area
-  if (
-    Math.abs(x - startFinishArea.centerX) <= startFinishArea.width / 2 &&
-    Math.abs(y - startFinishArea.centerY) <= startFinishArea.height / 2
-  ) {
+  // The grid area straddles the line, so it always counts as asphalt, as does the pit lane
+  if (isInStartZone(x, y) || isOnPitLane(x, y)) {
     window.lastTrackSurfaceInfo = { surface: "asphalt", gripModifier: 1.0, distanceFromCenter: 0, segmentInfo: null };
     return true; // Always allow cars in the starting area
   }
@@ -119,20 +108,7 @@ function distanceToLineSegmentWithInfo(px, py, x1, y1, x2, y2) {
 // Helper function to check if car is in starting area during race start
 function isInStartingAreaDuringRaceStart(car) {
   const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
-  const startFinishArea = {
-    centerX: 1000,
-    centerY: 1300,
-    width: 200,
-    height: 300,
-  };
-
-  return (
-    raceTime < 2 &&
-    Math.abs(car.x - startFinishArea.centerX) <=
-      startFinishArea.width / 2 &&
-    Math.abs(car.y - startFinishArea.centerY) <=
-      startFinishArea.height / 2
-  );
+  return raceTime < 2 && isInStartZone(car.x, car.y);
 }
 
 // Helper function to apply surface-specific effects

@@ -6,6 +6,9 @@ document.addEventListener("keydown", (e) => {
   if (e.code === "KeyM" && !e.repeat && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
     toggleSound();
   }
+  if (e.code === "KeyP" && !e.repeat && !["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+    togglePlayerPitRequest();
+  }
 
   // Carousel navigation in team selection screen
   if (

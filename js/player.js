@@ -27,7 +27,14 @@ function updatePlayer() {
     player.isSliding = false;
   }
 
+  if (updatePitStop(player)) {
+    updatePlayerSpeed();
+    checkPlayerCheckpoints();
+    return;
+  }
+
   handleNitroSystem(inputs);
+  applyDriverConsistency(inputs);
   player.throttleInput = Math.min(1, inputs.acceleration);
   player.brakeInput = inputs.braking > 0 ? 1 : 0;
   player.steerInput = inputs.steering;
@@ -39,6 +46,7 @@ function updatePlayer() {
   limitSpeed();
   updatePosition();
   updateTireWear(inputs, currentSpeed);
+  burnFuel(player, Math.min(1, inputs.acceleration));
   applyFriction(currentSpeed);
 
   handleTrackCollision(player);
@@ -58,14 +66,15 @@ function completeTimeTrialLap(lapTime) {
     weather: gameWeather,
     difficulty: gameDifficulty,
     date: new Date().toISOString(),
-    track: "Circuit Racer Track" // Add track name for future track support
+    track: track.name // Add track name for future track support
   };
   
   // Add to time trial laps
   timeTrialLaps.push(lapData);
   
   // Get the current best time from the leaderboard (not just session best)
-  const currentBestTime = timeTrialLeaderboard.length > 0 ? timeTrialLeaderboard[0].time : null;
+  const circuitRecords = currentCircuitTimeTrialRecords();
+  const currentBestTime = circuitRecords.length > 0 ? circuitRecords[0].time : null;
   
   // Store previous best time before updating
   const previousBestTime = bestTimeTrialLap ? bestTimeTrialLap.lapTime : null;
@@ -83,25 +92,7 @@ function completeTimeTrialLap(lapTime) {
 }
 
 function getSelectedTeamName() {
-  const teamMapping = {
-    emerald_isle: "Emerald Isle Racing",
-    dragon_force: "Dragon Force Motorsport",
-    highland_racing: "Highland Racing Team",
-    britannia_motors: "Britannia Motors",
-    tricolore_racing: "Tricolore Racing",
-    kaiser_motorsport: "Kaiser Motorsport",
-    iberian_speed: "Iberian Speed",
-    veloce_italia: "Veloce Italia",
-    adriatic_racing: "Adriatic Racing",
-    liberty_racing: "Liberty Racing",
-    rising_sun: "Rising Sun Motors",
-    celestial_motors: "Celestial Motors",
-    maharaja_motors: "Maharaja Motors",
-    samba_racing: "Samba Racing Team",
-    velocidad_venezuela: "Velocidad Venezuela",
-    regina_curse: "Regina Curse",
-  };
-  return teamMapping[selectedTeam] || "Unknown Team";
+  return teamKeyToName[selectedTeam] || "Unknown Team";
 }
 
 // Show time trial complete screen
@@ -136,8 +127,9 @@ function showTimeTrialComplete(lapData, previousBestTime) {
 
 function updateTimeTrialCompleteLeaderboard() {
   const listElement = document.getElementById("timeTrialCompleteLeaderboard");
+  const circuitRecords = currentCircuitTimeTrialRecords();
   
-  if (timeTrialLeaderboard.length === 0) {
+  if (circuitRecords.length === 0) {
     listElement.innerHTML = `
       <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
         No records yet
@@ -148,7 +140,7 @@ function updateTimeTrialCompleteLeaderboard() {
 
   let html = '';
   // Show top 5 records in the complete screen
-  const topRecords = timeTrialLeaderboard.slice(0, 5);
+  const topRecords = circuitRecords.slice(0, 5);
   
   topRecords.forEach((entry, index) => {
     const minutes = Math.floor(entry.time / 60);
@@ -199,7 +191,7 @@ function handleNitroSystem(inputs) {
   if (isControlPressed("Space") && player.nitro > 0) {
     player.usingNitro = true;
     player.nitro -= 1.5;
-    inputs.acceleration *= 1.8;
+    inputs.acceleration *= player.performance ? player.performance.nitroBoost : 1.8;
 
     createNitroFlames();
   } else if (player.nitro < player.maxNitro) {
@@ -222,7 +214,9 @@ function handleSteering(steeringInput, currentSpeed) {
   if (steeringInput === 0) return;
 
   const speedFactor = Math.max(0.4, Math.min(1.0, currentSpeed / 4));
-  const baseTurnRate = player.turnSpeed * (1.5 - speedFactor * 0.4);
+  // Wet track and a heavy fuel load both take the edge off the steering
+  const grip = 0.55 + 0.45 * weatherGripFor(player);
+  const baseTurnRate = player.turnSpeed * (1.5 - speedFactor * 0.4) * grip * fuelMassFactor(player);
 
   player.angle += steeringInput * baseTurnRate;
 
@@ -234,10 +228,9 @@ function handleSteering(steeringInput, currentSpeed) {
 function handleAcceleration(accelerationInput) {
   if (accelerationInput <= 0) return;
 
-  const forwardX =
-    Math.cos(player.angle) * player.acceleration * accelerationInput;
-  const forwardY =
-    Math.sin(player.angle) * player.acceleration * accelerationInput;
+  const thrust = player.acceleration * accelerationInput * fuelMassFactor(player);
+  const forwardX = Math.cos(player.angle) * thrust;
+  const forwardY = Math.sin(player.angle) * thrust;
   player.velocity.x += forwardX;
   player.velocity.y += forwardY;
 }
@@ -251,7 +244,7 @@ function handleBraking(brakingInput, currentSpeed) {
   );
 
   if (velocityMagnitude > 0.1) {
-    const brakeForce = brakingInput * player.acceleration * 1.8;
+    const brakeForce = brakingInput * (player.brakingPower || 0.24) * 2.6 * (0.7 + 0.3 * weatherGripFor(player));
     const normalizedVelX = player.velocity.x / velocityMagnitude;
     const normalizedVelY = player.velocity.y / velocityMagnitude;
 
@@ -265,9 +258,8 @@ function handleBraking(brakingInput, currentSpeed) {
 }
 
 function limitSpeed() {
-  const maxSpeed = player.usingNitro
-    ? player.maxSpeed * 1.3
-    : player.maxSpeed;
+  let maxSpeed = player.usingNitro ? player.maxSpeed * 1.3 : player.maxSpeed;
+  if (player.fuel !== undefined && player.fuel <= 0) maxSpeed *= 0.55; // Out of fuel: limp home
   const speed = Math.sqrt(
     player.velocity.x * player.velocity.x +
       player.velocity.y * player.velocity.y
@@ -322,9 +314,11 @@ function applyFriction(currentSpeed) {
   const tireGripLoss = gameRunning ? progressiveWearEffect / 2.5 : 0; // Less severe grip loss
   
   // Calculate base friction that applies to all conditions
+  const drag = player.performance ? player.performance.drag : 0.002;
+  const wetDrag = (1 - weatherGripFor(player)) * 0.004;
   const combinedFriction = Math.max(
-    0.970, // Reduced from 0.975 to make friction more impactful
-    baseFriction - currentSpeed * 0.001 - tireGripLoss
+    0.965,
+    baseFriction - currentSpeed * 0.001 - tireGripLoss - drag - wetDrag
   );
   
   // Check if player is sliding (based on sliding detection)
@@ -340,6 +334,16 @@ function applyFriction(currentSpeed) {
   }
 }
 
+// Less consistent drivers get small throttle and steering wobbles; smoother drivers barely notice
+function applyDriverConsistency(inputs) {
+  if (!gameRunning || !player.performance) return;
+  const variance = player.performance.paceVariance; // 0 (perfect) to 0.08
+  if (variance <= 0.005) return;
+  if (Math.random() < 0.05) player.paceJitter = (Math.random() - 0.5) * 2 * variance * 2.5;
+  if (inputs.acceleration > 0) inputs.acceleration = Math.max(0.6, inputs.acceleration * (1 + player.paceJitter));
+  if (inputs.steering !== 0 && player.speed > 3) inputs.steering *= 1 + player.paceJitter * 0.5;
+}
+
 function updatePlayerSpeed() {
   player.speed = Math.sqrt(
     player.velocity.x * player.velocity.x +
@@ -348,16 +352,9 @@ function updatePlayerSpeed() {
 }
 
 function constrainToBounds() {
-  const worldBounds = 2500;
-
-  if (
-    player.x < -200 ||
-    player.x > worldBounds ||
-    player.y < -200 ||
-    player.y > worldBounds
-  ) {
-    player.x = Math.max(-150, Math.min(worldBounds - 50, player.x));
-    player.y = Math.max(-150, Math.min(worldBounds - 50, player.y));
+  if (isOutsideWorld(player.x, player.y)) {
+    player.x = Math.max(track.bounds.minX - 300, Math.min(track.bounds.maxX + 300, player.x));
+    player.y = Math.max(track.bounds.minY - 300, Math.min(track.bounds.maxY + 300, player.y));
     player.velocity.x *= 0.85;
     player.velocity.y *= 0.85;
   }
