@@ -523,7 +523,7 @@ function updatePositionDisplay(allCars) {
     }
     
     // Show top 5 time trial records
-    const topRecords = timeTrialLeaderboard.slice(0, 5);
+    const topRecords = currentCircuitTimeTrialRecords().slice(0, 5);
     
     if (topRecords.length === 0) {
       const emptyItem = document.createElement("div");

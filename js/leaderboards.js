@@ -5,9 +5,12 @@ let leaderboard = JSON.parse(
 
 const LEADERBOARD_SIZE = 10;
 
-// Records are kept per circuit; entries saved before circuits existed belong to the original circuit
+// Records are kept per circuit; entries saved before circuits existed belong to the original circuit.
+// This runs before js/circuits.js loads, so the original circuit's id is spelled out here.
+const DEFAULT_CIRCUIT_ID = "gleann_luais";
+
 function raceConditionsKey(entry) {
-  return `${entry.circuit || circuits[0].id}|${entry.weather || "clear"}|${entry.difficulty || "medium"}`;
+  return `${entry.circuit || DEFAULT_CIRCUIT_ID}|${entry.weather || "clear"}|${entry.difficulty || "medium"}`;
 }
 
 function compareRaceEntries(a, b) {
@@ -90,6 +93,27 @@ let timeTrialLeaderboard = JSON.parse(
   localStorage.getItem("circuitRacerTimeTrialLeaderboard") || "[]"
 );
 
+const TIME_TRIAL_RECORDS_PER_CIRCUIT = 20;
+
+// Time Trial records for the selected circuit, fastest first (old entries belong to the original circuit)
+function currentCircuitTimeTrialRecords() {
+  return timeTrialLeaderboard
+    .filter((entry) => (entry.circuit || DEFAULT_CIRCUIT_ID) === track.id)
+    .sort((a, b) => a.time - b.time);
+}
+
+// Keeps the fastest records of every circuit rather than the fastest overall
+function trimTimeTrialLeaderboard(entries) {
+  const counts = {};
+  return [...entries]
+    .sort((a, b) => a.time - b.time)
+    .filter((entry) => {
+      const key = entry.circuit || DEFAULT_CIRCUIT_ID;
+      counts[key] = (counts[key] || 0) + 1;
+      return counts[key] <= TIME_TRIAL_RECORDS_PER_CIRCUIT;
+    });
+}
+
 function saveTimeTrialRecord(lapData) {
   // Create leaderboard entry
   const entry = {
@@ -106,11 +130,8 @@ function saveTimeTrialRecord(lapData) {
   // Add to time trial leaderboard
   timeTrialLeaderboard.push(entry);
   
-  // Sort by best time (fastest first)
-  timeTrialLeaderboard.sort((a, b) => a.time - b.time);
-  
-  // Keep top 20 records
-  timeTrialLeaderboard = timeTrialLeaderboard.slice(0, 20);
+  // Fastest first, keeping the top records of each circuit
+  timeTrialLeaderboard = trimTimeTrialLeaderboard(timeTrialLeaderboard);
 
   // Save to localStorage
   localStorage.setItem(
@@ -124,18 +145,19 @@ function saveTimeTrialRecord(lapData) {
 
 function updateTimeTrialLeaderboardDisplay() {
   const listElement = document.getElementById("timeTrialLeaderboardList");
+  const records = currentCircuitTimeTrialRecords();
   
-  if (timeTrialLeaderboard.length === 0) {
+  if (records.length === 0) {
     listElement.innerHTML = `
       <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
-        Complete a time trial to see your best times here!
+        Complete a time trial on ${escapeHtml(track.name)} to see your best times here!
       </div>
     `;
     return;
   }
 
   let html = '';
-  timeTrialLeaderboard.forEach((entry, index) => {
+  records.forEach((entry, index) => {
     const minutes = Math.floor(entry.time / 60);
     const seconds = (entry.time % 60).toFixed(3);
     const timeString = `${minutes}:${seconds.padStart(6, "0")}`;
@@ -219,7 +241,7 @@ function importTimeTrialLeaderboard() {
         
         // Sort and keep top 20
         timeTrialLeaderboard.sort((a, b) => a.time - b.time);
-        timeTrialLeaderboard = timeTrialLeaderboard.slice(0, 20);
+        timeTrialLeaderboard = trimTimeTrialLeaderboard(timeTrialLeaderboard);
         
         // Save and update display
         localStorage.setItem(

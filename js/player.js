@@ -73,7 +73,8 @@ function completeTimeTrialLap(lapTime) {
   timeTrialLaps.push(lapData);
   
   // Get the current best time from the leaderboard (not just session best)
-  const currentBestTime = timeTrialLeaderboard.length > 0 ? timeTrialLeaderboard[0].time : null;
+  const circuitRecords = currentCircuitTimeTrialRecords();
+  const currentBestTime = circuitRecords.length > 0 ? circuitRecords[0].time : null;
   
   // Store previous best time before updating
   const previousBestTime = bestTimeTrialLap ? bestTimeTrialLap.lapTime : null;
@@ -126,8 +127,9 @@ function showTimeTrialComplete(lapData, previousBestTime) {
 
 function updateTimeTrialCompleteLeaderboard() {
   const listElement = document.getElementById("timeTrialCompleteLeaderboard");
+  const circuitRecords = currentCircuitTimeTrialRecords();
   
-  if (timeTrialLeaderboard.length === 0) {
+  if (circuitRecords.length === 0) {
     listElement.innerHTML = `
       <div class="time-trial-entry" style="text-align: center; color: var(--text-secondary);">
         No records yet
@@ -138,7 +140,7 @@ function updateTimeTrialCompleteLeaderboard() {
 
   let html = '';
   // Show top 5 records in the complete screen
-  const topRecords = timeTrialLeaderboard.slice(0, 5);
+  const topRecords = circuitRecords.slice(0, 5);
   
   topRecords.forEach((entry, index) => {
     const minutes = Math.floor(entry.time / 60);
