@@ -220,6 +220,7 @@ function startRace() {
   }
   player.fuel = 100;
   player.pitState = null;
+  player.wantsPit = false;
   player.paceJitter = 0;
 
   // Initialize time trial or regular race
