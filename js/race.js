@@ -38,20 +38,8 @@ function checkCarCheckpoints(car) {
   // Special collision detection for start/finish line (checkpoint 0)
   // Uses a wider rectangular area to accommodate different racing lines
   if (nextCheckpointIndex === 0) {
-    // Wide finish line area spans the track width to catch cars using inside/outside lines
-    const finishY = nextCheckpoint.y;
-    const finishCenterX = nextCheckpoint.x;
-    // Generous finish line detection area to accommodate all racing lines
-    const finishWidth = 320; // Increased from 280 to ensure wide lines are detected
-    const finishHeight = 140; // Increased from 120 for better coverage
-
-    // Check if car is within the finish line area
-    if (
-      car.y >= finishY - finishHeight / 2 &&
-      car.y <= finishY + finishHeight / 2 &&
-      car.x >= finishCenterX - finishWidth / 2 &&
-      car.x <= finishCenterX + finishWidth / 2
-    ) {
+    // The finish gate is a rectangle aligned with the start straight, wide enough for every racing line
+    if (isInStartZone(car.x, car.y, 140, Math.max(320, track.width * 2))) {
       checkpointHit = true;
     }
   } else {
@@ -129,7 +117,7 @@ function checkCarCheckpoints(car) {
                 // Check if this is also an all-time lap record
                 if (currentLapTime < lapRecord) {
                   lapRecord = currentLapTime;
-                  localStorage.setItem("circuitRacerLapRecord", String(lapRecord));
+                  localStorage.setItem(lapRecordStorageKey(), String(lapRecord));
                   
                   // Show a lap record notification
                   const notification = document.createElement("div");
@@ -188,7 +176,7 @@ function checkCarCheckpoints(car) {
 
         // Reset for next lap
         car.currentCheckpoint = 1; // Next checkpoint after start/finish
-        car.checkpointsHit = [true, false, false];
+        car.checkpointsHit = freshCheckpointsHit();
 
         console.log(
           `${car.name || "Player"} completed lap ${car.lapsCompleted}`

@@ -254,72 +254,102 @@ function initializeTeamSelection() {
 }
 
 function populateTeamAttributes() {
-  const teamCards = document.querySelectorAll(".team-card");
+  document.querySelectorAll(".team-card").forEach((card) => {
+    const teamData = getTeamByName(teamKeyToName[card.getAttribute("data-team")]);
+    if (!teamData) return;
 
-  teamCards.forEach((card) => {
-    const teamKey = card.getAttribute("data-team");
-    const teamMapping = {
-      emerald_isle: "Emerald Isle Racing",
-      dragon_force: "Dragon Force Motorsport",
-      highland_racing: "Highland Racing Team",
-      britannia_motors: "Britannia Motors",
-      tricolore_racing: "Tricolore Racing",
-      kaiser_motorsport: "Kaiser Motorsport",
-      iberian_speed: "Iberian Speed",
-      veloce_italia: "Veloce Italia",
-      adriatic_racing: "Adriatic Racing",
-      liberty_racing: "Liberty Racing",
-      rising_sun: "Rising Sun Motors",
-      celestial_motors: "Celestial Motors",
-      maharaja_motors: "Maharaja Motors",
-      samba_racing: "Samba Racing Team",
-      velocidad_venezuela: "Velocidad Venezuela",
-      regina_curse: "Regina Curse",
-    };
-
-    const teamName = teamMapping[teamKey];
-    const teamData = aiTeams.find((team) => team.name === teamName);
-
-    if (teamData) {
-      // Add attributes container if it doesn't exist
-      let attributesContainer = card.querySelector(".team-attributes");
-      if (!attributesContainer) {
-        attributesContainer = document.createElement("div");
-        attributesContainer.className = "team-attributes";
-        card.appendChild(attributesContainer);
-      }
-
-      // Create attributes HTML
-      const attributeNames = {
-        speed: "Speed",
-        acceleration: "Acceleration",
-        handling: "Handling",
-        braking: "Braking",
-        reliability: "Reliability",
-        tireManagement: "Tire Mgmt",
-      };
-
-      let attributesHTML =
-        '<div class="attributes-title">Team Attributes</div>';
-
-      Object.entries(attributeNames).forEach(([key, displayName]) => {
-        const value = teamData.attributes[key];
-        const percentage = (value / 20) * 100; // Scale to 0-100%
-
-        attributesHTML += `
-                      <div class="attribute-row">
-                          <span class="attribute-name">${displayName}</span>
-                          <div class="attribute-bar">
-                              <div class="attribute-fill" style="width: ${percentage}%"></div>
-                          </div>
-                          <span class="attribute-value">${value}</span>
-                      </div>
-                  `;
-      });
-
-      attributesContainer.innerHTML = attributesHTML;
+    let container = card.querySelector(".team-attributes");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "team-attributes";
+      card.appendChild(container);
     }
+
+    const total = attributeDefinitions.reduce((sum, definition) => sum + (teamData.attributes[definition.key] || 0), 0);
+    const bars = attributeDefinitions
+      .map((definition) => {
+        const value = teamData.attributes[definition.key] ?? 0;
+        return `
+          <div class="attribute-row" data-tip="${escapeHtml(definition.description)}" tabindex="0">
+            <span class="attribute-name">${escapeHtml(definition.label)}</span>
+            <div class="attribute-bar"><div class="attribute-fill" style="width: ${(value / 20) * 100}%"></div></div>
+            <span class="attribute-value">${value}</span>
+          </div>`;
+      })
+      .join("");
+
+    container.innerHTML = `
+      <div class="attributes-title">Car &amp; Driver <span class="attributes-total">${total} pts</span></div>
+      <div class="attributes-layout">
+        <canvas class="attribute-radar" width="150" height="150" aria-label="Attribute radar chart"></canvas>
+        <div class="attribute-bars">${bars}</div>
+      </div>`;
+    drawAttributeRadar(container.querySelector(".attribute-radar"), teamData);
   });
+}
+
+// Radar chart of the thirteen ratings, drawn in the team's colour
+function drawAttributeRadar(radarCanvas, teamData) {
+  const g = radarCanvas.getContext("2d");
+  const size = radarCanvas.width;
+  const centre = size / 2;
+  const radius = size / 2 - 18;
+  const count = attributeDefinitions.length;
+  const angleFor = (index) => -Math.PI / 2 + (index / count) * Math.PI * 2;
+  const pointFor = (index, value) => ({
+    x: centre + Math.cos(angleFor(index)) * radius * value,
+    y: centre + Math.sin(angleFor(index)) * radius * value,
+  });
+
+  g.clearRect(0, 0, size, size);
+  [0.25, 0.5, 0.75, 1].forEach((ring) => {
+    g.beginPath();
+    for (let i = 0; i < count; i++) {
+      const p = pointFor(i, ring);
+      if (i === 0) g.moveTo(p.x, p.y);
+      else g.lineTo(p.x, p.y);
+    }
+    g.closePath();
+    g.strokeStyle = ring === 1 ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.12)";
+    g.lineWidth = 1;
+    g.stroke();
+  });
+  g.strokeStyle = "rgba(255,255,255,0.12)";
+  for (let i = 0; i < count; i++) {
+    const p = pointFor(i, 1);
+    g.beginPath();
+    g.moveTo(centre, centre);
+    g.lineTo(p.x, p.y);
+    g.stroke();
+  }
+
+  g.beginPath();
+  attributeDefinitions.forEach((definition, i) => {
+    const p = pointFor(i, Math.max(0.05, (teamData.attributes[definition.key] ?? 0) / 20));
+    if (i === 0) g.moveTo(p.x, p.y);
+    else g.lineTo(p.x, p.y);
+  });
+  g.closePath();
+  g.fillStyle = hexToRgba(teamData.color, 0.45);
+  g.fill();
+  g.strokeStyle = teamData.color;
+  g.lineWidth = 2;
+  g.stroke();
+
+  g.fillStyle = "rgba(255,255,255,0.8)";
+  g.font = "bold 8px Arial";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  attributeDefinitions.forEach((definition, i) => {
+    const p = pointFor(i, 1.16);
+    g.fillText(definition.short, p.x, p.y);
+  });
+}
+
+function hexToRgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const value = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+  return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
 }
 
 function updateCarousel() {
@@ -497,56 +527,14 @@ function readableTextOn(background) {
 function proceedToRace() {
   if (!selectedTeam) return;
 
-  // Map selectedTeam (key) to actual team name and find the corresponding aiTeam
-  const teamMapping = {
-    emerald_isle: "Emerald Isle Racing",
-    dragon_force: "Dragon Force Motorsport",
-    highland_racing: "Highland Racing Team",
-    britannia_motors: "Britannia Motors",
-    tricolore_racing: "Tricolore Racing",
-    kaiser_motorsport: "Kaiser Motorsport",
-    iberian_speed: "Iberian Speed",
-    veloce_italia: "Veloce Italia",
-    adriatic_racing: "Adriatic Racing",
-    liberty_racing: "Liberty Racing",
-    rising_sun: "Rising Sun Motors",
-    celestial_motors: "Celestial Motors",
-    maharaja_motors: "Maharaja Motors",
-    samba_racing: "Samba Racing Team",
-    velocidad_venezuela: "Velocidad Venezuela",
-    regina_curse: "Regina Curse",
-  };
-
-  const teamName = teamMapping[selectedTeam];
+  const teamName = teamKeyToName[selectedTeam];
   const teamData = aiTeams.find((team) => team.name === teamName);
   if (teamData) {
     // Set player car color to match selected team
     player.color = teamData.color;
 
-    // Apply team attributes to player car
-    player.teamAttributes = teamData.attributes;
-
-    // Calculate performance multipliers from team attributes (1-20 scale converted to meaningful multipliers)
-    // Each team attribute affects different aspects of car performance
-    // Apply the same multipliers as AI cars for consistency
-    const playerMultiplier = difficultySettings[gameDifficulty].playerAttributeMultiplier;
-    const speedMultiplier = (1.0 + (teamData.attributes.speed / 20) * 1.0) * playerMultiplier; // Max speed scaling
-    const accelMultiplier = (1.0 + (teamData.attributes.acceleration / 20) * 1.0) * playerMultiplier; // Acceleration force scaling
-    const handlingMultiplier = (1.0 + (teamData.attributes.handling / 20) * 1.0) * playerMultiplier; // Turn rate scaling
-    const brakingMultiplier = (1.0 + (teamData.attributes.braking / 20) * 1.0) * playerMultiplier; // Braking force scaling
-    const reliabilityMultiplier = (0.8 + (teamData.attributes.reliability / 20) * 0.4) * playerMultiplier; // Damage resistance (0.8-1.2)
-    const tireMultiplier = (0.4 + (teamData.attributes.tireManagement / 20) * 1.2) * playerMultiplier; // Tire wear reduction (0.4-1.6)
-
-    // Apply calculated multipliers to base car performance stats
-    player.maxSpeed = player.baseMaxSpeed * speedMultiplier;
-    player.acceleration = player.baseAcceleration * accelMultiplier;
-    player.turnSpeed = player.baseTurnSpeed * handlingMultiplier;
-    player.friction = player.baseFriction * brakingMultiplier;
-    player.brakingPower = (player.baseBrakingPower || 0.15) * brakingMultiplier;
-
-    // Tire and reliability systems
-    player.tireWearRate = 0.05 / tireMultiplier; // Better tire management = slower wear - reduced for longer tire life (5 laps)
-    player.reliabilityFactor = reliabilityMultiplier; // Affects damage susceptibility
+    // Apply team attributes to the player's car
+    applyPlayerTeamSetup(teamData.attributes);
 
     // Ensure lap timing and race progress tracking are properly initialized
     player.lapTimes = [];

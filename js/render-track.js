@@ -190,6 +190,7 @@ function paintTrackLayer(g) {
   strokeTrackPath(g, "rgba(0, 0, 0, 0.14)", 40);
   strokeTrackPath(g, "rgba(255, 225, 110, 0.45)", 2, [26, 30]);
 
+  paintPitLane(g);
   paintStartFinish(g);
   track.checkpoints.forEach((checkpoint, index) => {
     if (index > 0) paintCheckpointGate(g, checkpoint);
@@ -197,7 +198,7 @@ function paintTrackLayer(g) {
 }
 
 function getTrackLayer() {
-  if (trackLayer && trackLayer.weather === gameWeather) return trackLayer;
+  if (trackLayer && trackLayer.weather === gameWeather && trackLayer.circuitId === track.id) return trackLayer;
   const margin = track.width + 140;
   let minX = Infinity;
   let minY = Infinity;
@@ -217,7 +218,7 @@ function getTrackLayer() {
   const g = layerCanvas.getContext("2d");
   g.translate(-originX, -originY);
   paintTrackLayer(g);
-  trackLayer = { canvas: layerCanvas, originX, originY, weather: gameWeather };
+  trackLayer = { canvas: layerCanvas, originX, originY, weather: gameWeather, circuitId: track.id };
   return trackLayer;
 }
 
@@ -261,4 +262,43 @@ function drawTrack() {
       sourceHeight
     );
   }
+}
+
+// Minimap in the top-right corner of the canvas, drawn from the circuit data with car markers
+let miniMapCanvas = null;
+function drawMiniMapOverlay() {
+  if (!track.definition) return;
+  const size = Math.min(230, Math.max(150, canvas.width * 0.16));
+  const height = Math.round(size * 0.7);
+  if (!miniMapCanvas || miniMapCanvas.width !== size || miniMapCanvas.height !== height) {
+    miniMapCanvas = document.createElement("canvas");
+    miniMapCanvas.width = size;
+    miniMapCanvas.height = height;
+  }
+  const cars = isTimeTrialMode ? [player] : [...aiCars, player];
+  drawCircuitMiniMap(miniMapCanvas, track.definition, {
+    padding: 12,
+    cars: cars.map((car) => ({ x: car.x, y: car.y, colour: car.color, isPlayer: car === player })),
+    roadColour: "#5a5e68",
+    kerbColour: "rgba(255,255,255,0.5)",
+  });
+  // Phones in landscape have the standings box over the top-right corner, so the map moves to the bottom centre
+  const compactLayout = window.matchMedia("(orientation: landscape) and (max-height: 540px)").matches;
+  const x = compactLayout ? (canvas.width - size) / 2 : canvas.width - size - 16;
+  const y = compactLayout ? canvas.height - height - 16 : 16;
+  ctx.save();
+  ctx.fillStyle = "rgba(10, 12, 18, 0.55)";
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x - 6, y - 6, size + 12, height + 12, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.drawImage(miniMapCanvas, x, y);
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.font = "bold 11px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(track.name.toUpperCase(), x + 4, y + 2);
+  ctx.restore();
 }

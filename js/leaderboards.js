@@ -5,8 +5,9 @@ let leaderboard = JSON.parse(
 
 const LEADERBOARD_SIZE = 10;
 
+// Records are kept per circuit; entries saved before circuits existed belong to the original circuit
 function raceConditionsKey(entry) {
-  return `${entry.weather || "clear"}|${entry.difficulty || "medium"}`;
+  return `${entry.circuit || circuits[0].id}|${entry.weather || "clear"}|${entry.difficulty || "medium"}`;
 }
 
 function compareRaceEntries(a, b) {
@@ -26,13 +27,13 @@ function trimLeaderboard(entries) {
 }
 
 function getCurrentConditionsLeaderboard() {
-  const currentKey = raceConditionsKey({ weather: gameWeather, difficulty: gameDifficulty });
+  const currentKey = raceConditionsKey({ circuit: track.id, weather: gameWeather, difficulty: gameDifficulty });
   return leaderboard.filter((entry) => raceConditionsKey(entry) === currentKey).sort(compareRaceEntries);
 }
 
 function getConditionsLabel() {
   const capitalise = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-  return `${capitalise(gameWeather)}, ${capitalise(gameDifficulty)}`;
+  return `${track.name}: ${capitalise(gameWeather)}, ${capitalise(gameDifficulty)}`;
 }
 
 function escapeHtml(value) {
@@ -56,6 +57,7 @@ function saveLeaderboardEntry() {
     time: currentRaceTime,
     position: player.racePosition,
     date: new Date().toLocaleDateString(),
+    circuit: track.id,
     weather: gameWeather, // Add weather information
     difficulty: gameDifficulty, // Add difficulty information too
     team: getSelectedTeamName() // Add team information
@@ -97,7 +99,8 @@ function saveTimeTrialRecord(lapData) {
     weather: lapData.weather,
     difficulty: lapData.difficulty,
     date: new Date().toLocaleDateString(),
-    track: lapData.track || "Circuit Racer Track"
+    track: lapData.track || circuits[0].name,
+    circuit: track.id
   };
 
   // Add to time trial leaderboard

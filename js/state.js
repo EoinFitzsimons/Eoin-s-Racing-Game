@@ -107,12 +107,24 @@ const difficultySettings = {
 let lapStartTime = 0;
 let currentLapTime = 0;
 let bestLapTime = Number.MAX_VALUE; // Best lap time in current race
-let lapRecord = Number(localStorage.getItem("circuitRacerLapRecord")) || Number.MAX_VALUE; // All-time best race lap, saved in the browser
+let lapRecord = Number.MAX_VALUE; // All-time best race lap on the selected circuit, saved in the browser
+
+function lapRecordStorageKey() {
+  return `circuitRacerLapRecord:${track.id}`;
+}
+
+// Records are kept per circuit; the original circuit also inherits the pre-circuit-select record
+function loadLapRecord() {
+  const stored = Number(localStorage.getItem(lapRecordStorageKey()));
+  const legacy = track.id === circuits[0].id ? Number(localStorage.getItem("circuitRacerLapRecord")) : 0;
+  lapRecord = stored || legacy || Number.MAX_VALUE;
+}
 let lastLapTime = 0; // Last completed lap time
 let lapTimes = [];
 
 // Initialize team selection on page load
 document.addEventListener("DOMContentLoaded", () => {
+  renderCircuitSelector();
   initializeTeamSelection();
   // Set default theme to the first available team (Adriatic Racing)
   applyTeamTheme("adriatic_racing");

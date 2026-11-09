@@ -63,6 +63,7 @@ function handleCarCollisions() {
 }
 
 function handleCollision(car1, car2, dx, dy, distance) {
+  if (car1.pitState || car2.pitState) return; // Cars in the pit lane are out of the fight
   // Calculate collision severity based on relative speeds
   const relativeVelX = car2.velocity.x - car1.velocity.x;
   const relativeVelY = car2.velocity.y - car1.velocity.y;
@@ -116,7 +117,8 @@ function handleCollision(car1, car2, dx, dy, distance) {
 function applyCollisionDamage(car, amount) {
   // Apply damage to random components based on reliability
   const reliabilityFactor = car.reliabilityFactor || 1.0;
-  const actualDamage = amount / reliabilityFactor;
+  const aggressionFactor = car.performance ? car.performance.damageMultiplier : 1.0;
+  const actualDamage = (amount * aggressionFactor) / reliabilityFactor;
 
   // Distribute damage across different systems
   const damageTypes = ["speed", "acceleration", "handling", "braking"];
@@ -140,26 +142,20 @@ function applyDamageEffects(car) {
   const handlingReduction = 1 - car.damage.handling / 200;
   const brakingReduction = 1 - car.damage.braking / 200;
 
-  if (car === player) {
-    // Apply to player car
-    car.maxSpeed = car.baseMaxSpeed * speedReduction;
-    car.acceleration = car.baseAcceleration * accelReduction;
-    car.turnSpeed = car.baseTurnSpeed * handlingReduction;
-    car.friction = Math.max(0.8, car.baseFriction * brakingReduction);
-  } else {
-    // Apply to AI cars (store original values if not stored)
-    if (!car.originalMaxSpeed) {
-      car.originalMaxSpeed = car.maxSpeed;
-      car.originalAcceleration = car.acceleration;
-      car.originalTurnSpeed = car.turnSpeed;
-      car.originalFriction = car.friction;
-    }
-
-    car.maxSpeed = car.originalMaxSpeed * speedReduction;
-    car.acceleration = car.originalAcceleration * accelReduction;
-    car.turnSpeed = car.originalTurnSpeed * handlingReduction;
-    car.friction = Math.max(0.8, car.originalFriction * brakingReduction);
-  }
+  // Damage is applied on top of the team setup, so repairs restore the car's rated performance
+  const setup = car.setup || {
+    maxSpeed: car.maxSpeed,
+    acceleration: car.acceleration,
+    turnSpeed: car.turnSpeed,
+    friction: car.friction,
+    brakingPower: car.brakingPower || 0.15,
+  };
+  car.setup = setup;
+  car.maxSpeed = setup.maxSpeed * speedReduction;
+  car.acceleration = setup.acceleration * accelReduction;
+  car.turnSpeed = setup.turnSpeed * handlingReduction;
+  car.friction = Math.max(0.8, setup.friction * brakingReduction);
+  car.brakingPower = setup.brakingPower * brakingReduction;
 }
 
 // Advanced grip and tire physics for realistic F1 handling

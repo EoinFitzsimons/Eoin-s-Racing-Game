@@ -105,6 +105,7 @@ function gameLoop(timestamp) {
 
   // Reset camera matrix for UI rendering
   resetCameraTransform();
+  drawMiniMapOverlay();
 
   // Update all UI elements (not affected by camera movement)
   updateUI();
@@ -179,13 +180,13 @@ function startRace() {
   document.getElementById("nitroBar").style.background = "rgb(0, 0, 255)";
 
   // Reset player to pole position (front of grid)
-  player.x = 1000; // Center of track
-  player.y = 1300; // Front of the grid (pole position)
-  player.angle = -Math.PI / 2; // Point upward initially
+  player.x = track.start.x;
+  player.y = track.start.y;
+  player.angle = track.start.angle;
   player.velocity = { x: 0, y: 0 };
   player.speed = 0;
   player.currentCheckpoint = 1;
-  player.checkpointsHit = [true, false, false];
+  player.checkpointsHit = freshCheckpointsHit();
   player.lapsCompleted = 0;
   player.lapProgress = 0;
   player.racePosition = 1;
@@ -213,28 +214,13 @@ function startRace() {
   player.lastCollisionTime = 0;
   player.checkpointTimes = {}; // Reset checkpoint times
 
-  // Reset player stats to base values (team attributes will be reapplied)
+  // Re-apply team attributes (undoing damage from the previous race) and fill the tank
   if (player.teamAttributes) {
-    // Reapply team effects
-    const speedMultiplier =
-      0.7 + (player.teamAttributes.speed / 20) * 0.6;
-    const accelMultiplier =
-      0.7 + (player.teamAttributes.acceleration / 20) * 0.6;
-    const handlingMultiplier =
-      0.7 + (player.teamAttributes.handling / 20) * 0.6;
-    const tireMultiplier =
-      0.8 + (player.teamAttributes.tireManagement / 20) * 0.4;
-    const reliabilityMultiplier =
-      0.8 + (player.teamAttributes.reliability / 20) * 0.4;
-
-    player.maxSpeed = player.baseMaxSpeed * speedMultiplier;
-    player.acceleration = player.baseAcceleration * accelMultiplier;
-    player.turnSpeed = player.baseTurnSpeed * handlingMultiplier;
-    player.friction =
-      player.baseFriction + (player.teamAttributes.braking - 10) * 0.002;
-    player.tireWearRate = 0.15 / tireMultiplier;
-    player.reliabilityFactor = reliabilityMultiplier;
+    applyPlayerTeamSetup(player.teamAttributes);
   }
+  player.fuel = 100;
+  player.pitState = null;
+  player.paceJitter = 0;
 
   // Initialize time trial or regular race
   if (isTimeTrialMode) {

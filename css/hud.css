@@ -518,3 +518,16 @@ body {
     color: var(--text-secondary);
   }
 }
+
+/* Taller team cards for the expanded attribute model (radar chart plus thirteen bars) */
+@media (max-width: 1400px) {
+  .team-card {
+    height: 540px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .team-card {
+    height: 470px;
+  }
+}

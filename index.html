@@ -502,7 +502,7 @@
             style="font-size: 0.9rem; padding: 0.7rem 1.5rem; min-width: 150px; margin: 0 0.5rem;"
             onclick="randomizeTeamAttributes()"
           >
-            Randomize Attributes
+            Randomise Attributes
           </button>
           <button
             class="professional-btn"
@@ -526,6 +526,13 @@
           </div>
         </div>
         
+        <!-- Circuit selector: cards drawn from each circuit's centreline -->
+        <div class="circuit-selector">
+          <h3>Select Circuit</h3>
+          <div class="circuit-cards" id="circuitCards"></div>
+          <div class="circuit-description" id="circuitDescription"></div>
+        </div>
+
         <button class="professional-btn" onclick="startRace()">
           START RACE
         </button>
@@ -559,6 +566,7 @@
           <h3>Race Instructions</h3>
           <p class="keyboard-only"><strong>Controls:</strong> WASD or Arrow Keys to drive</p>
           <p class="keyboard-only"><strong>Boost:</strong> SPACE for Nitro</p>
+          <p class="keyboard-only"><strong>Pit stop:</strong> P to box at the end of the lap (Race mode)</p>
           <p class="touch-only"><strong>Controls:</strong> steer with the arrows on the left, throttle and brake on the right</p>
           <p class="touch-only"><strong>Boost:</strong> hold NITRO</p>
           <p id="objectiveText">
@@ -654,7 +662,7 @@
           </div>
         </div>
         <div class="ui-item">
-          <span>Tires:</span>
+          <span>Tyres:</span>
           <div
             style="
               flex: 1;
@@ -677,7 +685,31 @@
             ></div>
           </div>
         </div>
-        <div class="ui-item"></div>
+        <div class="ui-item">
+          <span>Fuel:</span>
+          <div
+            style="
+              flex: 1;
+              margin-left: 0.8rem;
+              height: 10px;
+              background: rgba(255, 255, 255, 0.3);
+              border-radius: 5px;
+              position: relative;
+            "
+          >
+            <div
+              id="fuelBar"
+              style="
+                height: 100%;
+                background: rgb(255, 170, 40);
+                border-radius: 5px;
+                width: 100%;
+                transition: width 0.2s, background 0.3s;
+              "
+            ></div>
+          </div>
+        </div>
+        <div class="ui-item pit-status" id="pitStatus" style="display: none"></div>
         <div class="ui-item">
           <span>Damage:</span>
           <div
@@ -1003,6 +1035,7 @@
     <script src="js/state.js"></script>
     <script src="js/leaderboards.js"></script>
     <script src="js/input.js"></script>
+    <script src="js/circuits.js"></script>
     <script src="js/world.js"></script>
     <script src="js/ai-teams.js"></script>
     <script src="js/effects.js"></script>
@@ -1011,6 +1044,7 @@
     <script src="js/player.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/race.js"></script>
+    <script src="js/pits.js"></script>
     <script src="js/track-collision.js"></script>
     <script src="js/render-track.js"></script>
     <script src="js/render-cars.js"></script>

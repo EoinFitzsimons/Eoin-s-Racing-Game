@@ -1,80 +1,4 @@
 // Track design - Larger proper circuit with start/finish at middle bottom
-const track = {
-  waypoints: [
-    // Fillte Faoi Dheireadh (Final Return) - Last turn before start/finish
-    { x: 1000, y: 1300, checkpoint: true },
-    { x: 1000, y: 1220 },
-    { x: 1000, y: 1140 },
-
-    // Droim Gealáin (Back Straight Ridge) - Long back straight section
-    { x: 1080, y: 1060, checkpoint: true },
-    { x: 1200, y: 980 },
-    { x: 1350, y: 900 },
-    { x: 1480, y: 820 },
-
-    // Géarchasadh Coscán (Sharp Brake Turn) - Sharp left corner
-    { x: 1650, y: 750, checkpoint: true },
-    { x: 1800, y: 680 },
-    { x: 1920, y: 600 },
-    { x: 2020, y: 520 },
-
-    // Cúinne Tír (Land Corner) - Medium left hander
-    { x: 2100, y: 450, checkpoint: true },
-    { x: 2150, y: 350 },
-    { x: 2170, y: 250 },
-    { x: 2160, y: 150 },
-
-    // Zigzag na gCarr (Car Zigzag) - Technical chicane section
-    { x: 2120, y: 80, checkpoint: true },
-    { x: 2000, y: 50 },
-    { x: 1850, y: 70 },
-    { x: 1700, y: 120 },
-
-    // Scuabaí Fada (Long Sweep) - Long left sweep down
-    { x: 1550, y: 180, checkpoint: true },
-    { x: 1400, y: 250 },
-    { x: 1280, y: 330 },
-    { x: 1180, y: 420 },
-
-    // Cúinne an Fhilleadh (Hairpin Corner) - Tight hairpin at top
-    { x: 1100, y: 500, checkpoint: true },
-    { x: 1000, y: 580 },
-    { x: 900, y: 660 },
-    { x: 820, y: 740 },
-
-    // Géarchodadh Roth (Sharp Wheel Turn) - Sharp right at top section
-    { x: 750, y: 820, checkpoint: true },
-    { x: 650, y: 900 },
-    { x: 520, y: 980 },
-    { x: 380, y: 1050 },
-
-    // Leantóir Gaoithe (Wind Follower) - Fast sweeping right
-    { x: 250, y: 1120, checkpoint: true },
-    { x: 180, y: 1200 },
-    { x: 150, y: 1300 },
-    { x: 180, y: 1400 },
-
-    // Casadh Luais (Speed Corner) - Long right hander
-    { x: 250, y: 1480, checkpoint: true },
-    { x: 350, y: 1520 },
-    { x: 480, y: 1540 },
-    { x: 620, y: 1550 },
-
-    // Start/finish line approach - First turn of the track
-    { x: 750, y: 1540, checkpoint: true },
-    { x: 850, y: 1520 },
-    { x: 920, y: 1480 },
-    { x: 960, y: 1420 },
-    { x: 980, y: 1360 },
-  ],
-  width: 160,
-  // Checkpoint system for lap counting
-  checkpoints: [
-    { id: 0, x: 1000, y: 1300, name: "Tosach/Críoch" }, // Start/Finish in Irish
-    { id: 1, x: 2100, y: 450, name: "Géarchodadh Roth" }, // Sharp Wheel Turn
-    { id: 2, x: 250, y: 1120, name: "Géarchasadh Coscán" }, // Sharp Brake Turn
-  ],
-};
 
 // Player car with team attributes and damage system
 // Player car object - Contains all player car state and physics properties
@@ -105,7 +29,7 @@ const player = {
 
   // Race progress tracking
   currentCheckpoint: 1, // Next checkpoint to hit (0=start/finish, 1=sector1, 2=sector2)
-  checkpointsHit: [true, false, false], // Boolean array tracking which checkpoints have been hit this lap
+  checkpointsHit: [true, false, false], // Rebuilt from the circuit's checkpoints by startRace()
   lapProgress: 0,
   lapsCompleted: 0,
   racePosition: 1,
@@ -124,7 +48,9 @@ const player = {
   },
   // Tire management (affected by team attributes)
   tireWear: 0, // 0-100, affects grip over time
-  tireWearRate: 0.15, // Rate of tire degradation per frame
+  tireWearRate: 0.15, // Rate of tyre degradation per step (scaled by tyre management)
+  fuel: 100, // Fuel load, 0-100; heavier loads blunt acceleration and cornering
+  baseBrakingPower: 0.15,
   reliabilityFactor: 1.0, // Affects chance of mechanical failures
   lastCollisionTime: 0,
   // Lap time tracking for accurate gap calculation
@@ -140,33 +66,6 @@ const player = {
 const aiCars = [];
 
 // Smooth centreline through the waypoints (centripetal Catmull-Rom), used for drawing and surface checks
-function buildTrackPath(waypoints, samplesPerSegment = 8) {
-  const count = waypoints.length;
-  const lerpPoint = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-  const knot = (a, b) => Math.sqrt(Math.hypot(b.x - a.x, b.y - a.y)) || 0.001;
-  const path = [];
-  for (let i = 0; i < count; i++) {
-    const p0 = waypoints[(i - 1 + count) % count];
-    const p1 = waypoints[i];
-    const p2 = waypoints[(i + 1) % count];
-    const p3 = waypoints[(i + 2) % count];
-    const t0 = 0;
-    const t1 = t0 + knot(p0, p1);
-    const t2 = t1 + knot(p1, p2);
-    const t3 = t2 + knot(p2, p3);
-    for (let s = 0; s < samplesPerSegment; s++) {
-      const t = t1 + ((t2 - t1) * s) / samplesPerSegment;
-      const a1 = lerpPoint(p0, p1, (t - t0) / (t1 - t0));
-      const a2 = lerpPoint(p1, p2, (t - t1) / (t2 - t1));
-      const a3 = lerpPoint(p2, p3, (t - t2) / (t3 - t2));
-      const b1 = lerpPoint(a1, a2, (t - t0) / (t2 - t0));
-      const b2 = lerpPoint(a2, a3, (t - t1) / (t3 - t1));
-      path.push(lerpPoint(b1, b2, (t - t1) / (t2 - t1)));
-    }
-  }
-  return path;
-}
-track.path = buildTrackPath(track.waypoints);
 
 // Starting grid: two cars per row, laid out backwards along the circuit from the start line
 const GRID_ROW_SPACING = 35;
@@ -188,7 +87,7 @@ function trackPoseBehindStart(distance) {
     }
     remaining -= segment;
   }
-  return { x: path[0].x, y: path[0].y, angle: -Math.PI / 2 };
+  return { x: path[0].x, y: path[0].y, angle: track.start.angle };
 }
 
 // The first waypoint in front of a grid slot, so cars on the final bend follow it instead of cutting across
