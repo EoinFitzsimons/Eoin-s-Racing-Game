@@ -421,10 +421,11 @@ function renderCircuitSelector() {
 }
 
 function circuitLapRecordText(circuitId) {
-  const stored = Number(localStorage.getItem(`circuitRacerLapRecord:${circuitId}`));
-  const legacy = circuitId === circuits[0].id ? Number(localStorage.getItem("circuitRacerLapRecord")) : 0;
-  const record = stored || legacy;
-  if (!record) return "No lap record";
+  // Same rule as loadLapRecord(): the original circuit also owns the pre-circuit-select record
+  const stored = Number(localStorage.getItem(`circuitRacerLapRecord:${circuitId}`)) || Infinity;
+  const legacy = circuitId === circuits[0].id ? Number(localStorage.getItem("circuitRacerLapRecord")) || Infinity : Infinity;
+  const record = Math.min(stored, legacy);
+  if (!Number.isFinite(record)) return "No lap record";
   const minutes = Math.floor(record / 60);
   const seconds = (record % 60).toFixed(3).padStart(6, "0");
   return `Record ${minutes}:${seconds}`;
