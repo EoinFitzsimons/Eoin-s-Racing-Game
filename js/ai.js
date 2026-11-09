@@ -84,9 +84,14 @@ function handleRaceStartProtection(ai) {
 function recoverStuckAI(ai) {
   const raceTime = gameRunning ? (gameNow() - raceStartTime) / 1000 : 0;
   if (!gameRunning || raceTime < 5) return false;
-  const speed = Math.hypot(ai.velocity.x, ai.velocity.y);
-  ai.stuckSteps = speed < 0.9 && !ai.stunned ? (ai.stuckSteps || 0) + 1 : 0;
-  if (ai.stuckSteps < 180) return false;
+  // Measure progress over three seconds rather than instantaneous speed, since a beached car
+  // can still jitter against the track edge
+  if (!ai.stuckAnchor) ai.stuckAnchor = { x: ai.x, y: ai.y, steps: 0 };
+  ai.stuckAnchor.steps++;
+  if (ai.stuckAnchor.steps < 180) return false;
+  const moved = Math.hypot(ai.x - ai.stuckAnchor.x, ai.y - ai.stuckAnchor.y);
+  ai.stuckAnchor = { x: ai.x, y: ai.y, steps: 0 };
+  if (moved > 40) return false;
   const count = track.waypoints.length;
   const behind = track.waypoints[(ai.targetWaypoint - 1 + count) % count];
   const ahead = track.waypoints[ai.targetWaypoint];
@@ -94,7 +99,6 @@ function recoverStuckAI(ai) {
   ai.y = behind.y;
   ai.angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x);
   ai.velocity = { x: Math.cos(ai.angle) * 1.5, y: Math.sin(ai.angle) * 1.5 };
-  ai.stuckSteps = 0;
   return true;
 }
 
