@@ -115,9 +115,9 @@ function lapRecordStorageKey() {
 
 // Records are kept per circuit; the original circuit also inherits the pre-circuit-select record
 function loadLapRecord() {
-  const stored = Number(localStorage.getItem(lapRecordStorageKey()));
-  const legacy = track.id === circuits[0].id ? Number(localStorage.getItem("circuitRacerLapRecord")) : 0;
-  lapRecord = stored || legacy || Number.MAX_VALUE;
+  const stored = Number(localStorage.getItem(lapRecordStorageKey())) || Number.MAX_VALUE;
+  const legacy = track.id === circuits[0].id ? Number(localStorage.getItem("circuitRacerLapRecord")) || Number.MAX_VALUE : Number.MAX_VALUE;
+  lapRecord = Math.min(stored, legacy);
 }
 let lastLapTime = 0; // Last completed lap time
 let lapTimes = [];
